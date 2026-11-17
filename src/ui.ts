@@ -6,7 +6,7 @@
 const el = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const SPRITES = `${import.meta.env.BASE_URL}sprites/`;
 
-export type Screen = 'title' | 'select' | 'tracks' | 'race' | 'pause' | 'settings' | 'finish';
+export type Screen = 'title' | 'select' | 'tracks' | 'race' | 'pause' | 'settings' | 'controls' | 'finish';
 
 const screens: Record<Exclude<Screen, 'race'>, HTMLElement> = {
   title: el('title'),
@@ -14,6 +14,7 @@ const screens: Record<Exclude<Screen, 'race'>, HTMLElement> = {
   tracks: el('tracks'),
   pause: el('pause'),
   settings: el('settings'),
+  controls: el('controls'),
   finish: el('finish'),
 };
 const hud = el('hud');

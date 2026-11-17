@@ -225,6 +225,21 @@ button:focus-visible {
   border-radius: 3px;
 }
 
+/* the way back from a screen: a round button in its top left corner */
+#tracks-back {
+  position: absolute;
+  top: calc(14px + env(safe-area-inset-top));
+  left: calc(14px + env(safe-area-inset-left));
+}
+.back-arrow {
+  width: 0;
+  height: 0;
+  margin: 0 5px 4px 0;
+  border-right: 20px solid var(--ink);
+  border-top: 13px solid transparent;
+  border-bottom: 13px solid transparent;
+}
+
 /* ───────── character select ───────── */
 /* Laid out as a grid so the pieces can be rearranged on short screens. */
 #select {
@@ -280,18 +295,13 @@ button:focus-visible {
   transform: translateY(5px) scale(0.98);
   transition-duration: 120ms;
 }
-#racers {
-  display: flex;
-  gap: clamp(12px, 3vw, 34px);
-  justify-content: center;
-  align-items: stretch;
-  flex-wrap: wrap;
-  max-width: 100%;
-}
 /* six racers: three to a row on upright screens, all six in a row on wide ones */
 #racers {
   display: grid;
   grid-template-columns: repeat(3, auto);
+  gap: clamp(12px, 3vw, 34px);
+  justify-content: center;
+  max-width: 100%;
 }
 @media (min-aspect-ratio: 13/10) {
   #racers {
@@ -683,7 +693,9 @@ button:focus-visible {
     opacity: 0;
   }
 }
-@media (max-height: 460px) {
+/* phones, either way up: a smaller lap counter and pause button, so that on an upright
+   phone the lap counter stops short of the item box in the middle */
+@media (max-height: 460px), (max-width: 480px) {
   .round {
     width: 56px;
     height: 56px;
@@ -693,6 +705,15 @@ button:focus-visible {
     height: 56px;
     font-size: 28px;
     border-radius: 20px;
+  }
+}
+@media (max-width: 480px) {
+  #lap-box {
+    padding: 0 14px 5px 13px;
+    gap: 7px;
+  }
+  #lap-box small {
+    font-size: 16px;
   }
 }
 
@@ -737,7 +758,8 @@ button:focus-visible {
 }
 .menu .btn {
   width: 100%;
-  min-width: 290px;
+  /* never wider than a small phone's screen can hold */
+  min-width: min(290px, 70vw);
 }
 /* if a menu is still taller than the screen, it scrolls instead of running off the edge */
 .menu {
@@ -749,7 +771,7 @@ button:focus-visible {
   flex-shrink: 0;
 }
 /* short landscape screens: buttons go two-up so they all fit without scrolling */
-@media (max-height: 620px) and (min-width: 680px) {
+@media (max-height: 620px) and (min-width: 600px) {
   .menu {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -761,11 +783,143 @@ button:focus-visible {
     grid-column: 1 / -1;
   }
   .menu .btn {
-    min-width: 250px;
+    min-width: min(250px, 38vw);
     min-height: 60px;
     font-size: 26px;
     padding: 0 20px 4px;
   }
+}
+
+/* upright phones: slimmer buttons with smaller words, so the longest label stays on one line
+   and the finish panel fits without scrolling */
+@media (max-width: 480px) {
+  .panel {
+    gap: 14px;
+  }
+  .menu .btn {
+    min-height: 60px;
+    padding: 0 18px 4px;
+    font-size: 26px;
+  }
+}
+
+/* controls: one row for each thing you can do, with how to do it by touch and on a keyboard */
+#controls-list {
+  margin: 0;
+  display: grid;
+  gap: 10px;
+  width: 100%;
+}
+.control {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 0 16px;
+  padding: 6px 16px 10px;
+  text-align: left;
+  background: #fff;
+  border: 4px solid var(--ink);
+  border-radius: 20px;
+  box-shadow: inset 0 -5px 0 #eadcbc;
+}
+.control dt {
+  grid-column: 1;
+  font-size: 24px;
+  font-weight: 700;
+}
+.control dd {
+  grid-column: 1;
+  margin: 0;
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 1.25;
+  opacity: 0.8;
+}
+.control .keys {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+  opacity: 1;
+}
+/* a small copy of the button to press, at the end of its row */
+.control .pic {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  opacity: 1;
+}
+.mini-fire,
+.mini-pause {
+  --size: 54px;
+  width: var(--size);
+  height: var(--size);
+  margin-top: 4px;
+  display: grid;
+  place-items: center;
+  border: 4px solid var(--ink);
+}
+.mini-fire {
+  border-radius: 50%;
+  background: var(--sky);
+  box-shadow: 0 4px 0 rgba(40, 20, 5, 0.9);
+}
+/* The bone, the second picture on the item sheet: the sheet is one row of square pictures,
+   so at this height each is --item wide and the bone starts one --item in. */
+.mini-fire i {
+  --item: calc(var(--size) * 0.62);
+  width: var(--item);
+  height: var(--item);
+  background: url('/sprites/items.png') calc(var(--item) * -1) 0 / auto 100% no-repeat;
+}
+.mini-pause {
+  border-radius: 34%;
+  background: var(--cream);
+  box-shadow:
+    inset 0 -5px 0 #e4c98f,
+    0 4px 0 rgba(40, 20, 5, 0.85);
+}
+.mini-pause .bars {
+  scale: 0.7;
+}
+/* upright phones: no room beside the words, so the keys go underneath them */
+@media (max-width: 480px) {
+  .control .keys {
+    grid-column: 1;
+    grid-row: auto;
+    margin-top: 5px;
+  }
+}
+/* Only the controls for the device in hand are listed: the touch ones where the main way of
+   pointing is a finger (phones and tablets), the keys everywhere else. */
+@media (pointer: coarse) {
+  .control .keys {
+    display: none;
+  }
+}
+@media not (pointer: coarse) {
+  .control .touch {
+    display: none;
+  }
+}
+/* With only the keys beside it, the label shares their two rows, so that the two line up
+   through their middles (alone in the top row, it sat higher than the keys). */
+@media (not (pointer: coarse)) and (min-width: 481px) {
+  .control dt {
+    grid-row: 1 / span 2;
+  }
+}
+kbd {
+  min-width: 34px;
+  padding: 3px 8px 6px;
+  font: inherit;
+  font-weight: 700;
+  text-align: center;
+  background: var(--cream);
+  border: 3px solid var(--ink);
+  border-radius: 10px;
+  box-shadow: inset 0 -4px 0 #e4c98f;
 }
 
 /* finish: everyone's place, with the player's own row lit up */
@@ -998,7 +1152,36 @@ button:focus-visible {
       0 5px 0 rgba(40, 20, 5, 0.9);
   }
   #standings {
+    grid-template-columns: 1fr 1fr;
     gap: 7px 12px;
+  }
+  #controls-list {
+    gap: 6px;
+  }
+  .control {
+    padding: 2px 12px 6px;
+    border-width: 3px;
+    border-radius: 16px;
+  }
+  .control dt {
+    font-size: 19px;
+  }
+  .control dd {
+    font-size: 15px;
+  }
+  .mini-fire,
+  .mini-pause {
+    --size: 42px;
+    border-width: 3px;
+  }
+  .mini-pause .bars {
+    scale: 0.55;
+  }
+  kbd {
+    min-width: 28px;
+    padding: 1px 6px 4px;
+    border-width: 2px;
+    border-radius: 8px;
   }
   .standing {
     gap: 8px;
@@ -1017,6 +1200,58 @@ button:focus-visible {
       inset 0 -4px 0 #f2b93b,
       0 0 0 3px #ffd21f,
       0 0 12px 3px rgba(255, 210, 31, 0.7);
+  }
+}
+
+/* ───────── upright phones: the dino and track cards grow to use the whole screen ───────── */
+@media (max-width: 540px) and (orientation: portrait) {
+  #select,
+  #tracks {
+    padding: 16px;
+    gap: 12px;
+  }
+
+  /* Dinos: three across, as wide as the screen allows (or as tall, on a short screen). */
+  #racers {
+    gap: 10px;
+  }
+  .racer {
+    width: min(calc((100vw - 52px) / 3), calc(40dvh - 130px));
+  }
+  .racer .racer-name {
+    font-size: clamp(15px, 20cqw, 24px);
+  }
+
+  /* Tracks: one above the other, as big as the height allows. The top of the screen is left
+     clear for the back button, which the heading would otherwise run into. */
+  #tracks {
+    padding-top: calc(76px + env(safe-area-inset-top));
+  }
+  #track-list {
+    gap: 14px;
+  }
+  .track-card {
+    width: min(calc(100vw - 32px), max(190px, calc(80dvh - 300px)));
+  }
+  .track-card .track-name {
+    font-size: 24px;
+  }
+}
+/* Tall enough for three rows: the dinos go two across instead, with bigger pictures and names.
+   The picture is sized from the screen's height so that all three rows always fit. */
+@media (max-width: 540px) and (orientation: portrait) and (min-height: 740px) {
+  #racers {
+    grid-template-columns: repeat(2, 1fr);
+    width: 100%;
+  }
+  .racer {
+    width: auto;
+  }
+  .racer .portrait {
+    width: clamp(60px, calc(26dvh - 120px), 100%);
+  }
+  .racer .racer-name {
+    font-size: 24px;
   }
 }
 

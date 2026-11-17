@@ -1,6 +1,6 @@
 // Generates the game's sound effects with ElevenLabs, a few takes of each so the best can be chosen.
 //
-//   npm run sfx                     generate any take that is missing or whose prompt changed, then publish
+//   npm run sfx                     generate takes for any effect that is new or whose prompt changed, then publish
 //   npm run sfx -- --retake hit     throw away the takes of one or more effects and generate fresh ones
 //   npm run sfx -- --dry            just list what would be generated
 //
@@ -9,6 +9,8 @@
 // effect is copied to public/audio/sfx/<id>.mp3 and listed in manifest.json; the game plays the
 // effects in the manifest and falls back to its built-in synthesised sound for any that are missing.
 // To switch takes: listen, change `pick` in sfx.json, run `npm run sfx` again (no new generation).
+// Once an effect is settled its other takes can be deleted: an effect whose picked take is there
+// is left alone, so they are not generated again.
 // Reads ELEVENLABS_API_KEY from .env.local.
 import { createHash } from 'node:crypto';
 import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, unlinkSync, writeFileSync } from 'node:fs';
@@ -46,10 +48,13 @@ const hash = (fx) =>
 let made = 0;
 for (const [id, fx] of Object.entries(effects)) {
   const h = hash(fx);
+  const have = (n) => state[`${id}-${n}`] === h && existsSync(join(takesDir, `${id}-${n}.mp3`));
+  // The chosen take is there and up to date: the others are not needed.
+  if (!retake.includes(id) && have(fx.pick)) continue;
   for (let n = 1; n <= TAKES; n++) {
     const takeId = `${id}-${n}`;
     const file = join(takesDir, `${takeId}.mp3`);
-    if (!retake.includes(id) && state[takeId] === h && existsSync(file)) continue;
+    if (!retake.includes(id) && have(n)) continue;
     if (dry) {
       console.log(`would generate ${takeId} (${fx.seconds}s): "${fx.prompt}"`);
       continue;

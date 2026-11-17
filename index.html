@@ -12,6 +12,29 @@
     <meta name="apple-mobile-web-app-title" content="Dino Kart" />
     <meta name="theme-color" content="#2f7fe0" />
     <title>Dino Kart</title>
+    <meta
+      name="description"
+      content="A cheerful dinosaur go-kart racer. Pick your dino, grab items and race to the finish, right in your browser."
+    />
+    <link rel="icon" href="./favicon.ico" sizes="48x48" />
+    <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+
+    <!-- Link previews. %SITE_URL% is filled in by the build (see vite.config.ts), because
+         these have to be full addresses. -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Dino Kart" />
+    <meta property="og:title" content="Dino Kart" />
+    <meta
+      property="og:description"
+      content="A cheerful dinosaur go-kart racer. Pick your dino, grab items and race to the finish, right in your browser."
+    />
+    <meta property="og:url" content="%SITE_URL%/" />
+    <meta property="og:image" content="%SITE_URL%/og.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="The Dino Kart logo: a grinning T-rex driving a red go-kart." />
+    <meta name="twitter:card" content="summary_large_image" />
   </head>
   <body>
     <canvas id="game"></canvas>
@@ -45,6 +68,9 @@
       </section>
 
       <section id="tracks" class="screen hidden">
+        <button id="tracks-back" class="round" type="button" data-action="tracks-back" aria-label="Back to dinos">
+          <i class="back-arrow"></i>
+        </button>
         <h2 id="track-title" class="heading">Pick a track!</h2>
         <div id="track-list"></div>
         <button id="go-track" class="btn btn-go btn-huge go-button" type="button"><i class="tri"></i>Go!</button>
@@ -63,10 +89,36 @@
       <section id="pause" class="overlay hidden">
         <div class="panel menu">
           <h2 class="heading small">Paused</h2>
-          <button class="btn btn-go full" type="button" data-action="resume"><i class="tri"></i>Keep racing</button>
+          <button class="btn btn-go" type="button" data-action="resume"><i class="tri"></i>Keep racing</button>
           <button class="btn btn-alt" type="button" data-action="change">New dino</button>
           <button class="btn btn-plain" type="button" data-action="settings"><span class="emoji">⚙️</span> Settings</button>
-          <button class="btn btn-plain" type="button" data-action="exit">Exit</button>
+          <button class="btn btn-plain" type="button" data-action="controls"><span class="emoji">🎮</span> Controls</button>
+        </div>
+      </section>
+
+      <section id="controls" class="overlay hidden">
+        <div class="panel menu">
+          <h2 class="heading small">Controls</h2>
+          <dl id="controls-list" class="full">
+            <div class="control">
+              <dt>Steer</dt>
+              <dd class="touch">Hold the left or right side of the screen</dd>
+              <dd class="keys"><kbd>←</kbd><kbd>→</kbd> or <kbd>A</kbd><kbd>D</kbd></dd>
+            </div>
+            <div class="control">
+              <dt>Use item</dt>
+              <dd class="touch">Tap the big round button</dd>
+              <dd class="touch pic" aria-hidden="true"><span class="mini-fire"><i></i></span></dd>
+              <dd class="keys"><kbd>Space</kbd></dd>
+            </div>
+            <div class="control">
+              <dt>Pause</dt>
+              <dd class="touch">Tap the pause button</dd>
+              <dd class="touch pic" aria-hidden="true"><span class="mini-pause"><i class="bars"></i></span></dd>
+              <dd class="keys"><kbd>Esc</kbd></dd>
+            </div>
+          </dl>
+          <button class="btn btn-go full" type="button" data-action="controls-back">OK!</button>
         </div>
       </section>
 
