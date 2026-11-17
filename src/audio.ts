@@ -7,8 +7,15 @@
  * music is always synthesised.
  */
 
+import type { SurfaceLoopId } from './layouts';
+
 const STORAGE_KEY = 'dino-kart-sound';
 const SFX = `${import.meta.env.BASE_URL}audio/sfx/`;
+const MUSIC = `${import.meta.env.BASE_URL}audio/music/`;
+/** Recorded music is mastered louder than the synthesised tune, so it is turned down to match. */
+const RECORDED_VOLUME = 0.7;
+/** The title theme plays under the menus and the dinos' voices, so it sits lower still. */
+const THEME_VOLUME = 0.45;
 
 type Effect =
   | 'tap'
@@ -27,17 +34,9 @@ type Effect =
   | 'lap'
   | 'finish'
   | 'engine'
-  | SurfaceLoop;
-
-/** What the player's wheels are on; each has its own looping sound. */
-export type SurfaceSound = 'road' | 'water' | 'bridge' | 'grass';
-type SurfaceLoop = 'surfaceRoad' | 'surfaceWater' | 'surfaceBridge' | 'surfaceGrass';
-const SURFACE_LOOPS: Record<SurfaceSound, SurfaceLoop> = {
-  road: 'surfaceRoad',
-  water: 'surfaceWater',
-  bridge: 'surfaceBridge',
-  grass: 'surfaceGrass',
-};
+  | 'bump'
+  | 'land'
+  | SurfaceLoopId;
 
 /** Playback volume of each recorded effect. */
 const VOLUME: Record<Effect, number> = {
@@ -64,7 +63,24 @@ const VOLUME: Record<Effect, number> = {
   surfaceWater: 0.34,
   surfaceBridge: 0.42,
   surfaceGrass: 0.24,
+  // Glacier Glide. Packed snow is the quiet bed there; ice and the lake stand out.
+  surfaceSnow: 0.12,
+  surfaceIce: 0.3,
+  surfaceLake: 0.3,
+  surfacePowder: 0.26,
+  bump: 0.75,
+  land: 0.8,
 };
+const SURFACE_LOOPS: SurfaceLoopId[] = [
+  'surfaceRoad',
+  'surfaceWater',
+  'surfaceBridge',
+  'surfaceGrass',
+  'surfaceSnow',
+  'surfaceIce',
+  'surfaceLake',
+  'surfacePowder',
+];
 
 // ---- Music --------------------------------------------------------------------
 // A bouncy marimba tune in D major, 16 bars long, with a bass line, off-beat
@@ -128,12 +144,20 @@ class Sound {
   private readonly samples = new Map<Effect, AudioBuffer>();
 
   /** One looping sound per surface, each with its own volume so they can cross-fade. */
-  private readonly surfaces = new Map<SurfaceSound, { source: AudioBufferSourceNode; gain: GainNode }>();
+  private readonly surfaces = new Map<SurfaceLoopId, { source: AudioBufferSourceNode; gain: GainNode }>();
 
   // The engine is a looping recording if there is one, otherwise an oscillator.
   private engineGain: GainNode | null = null;
   private engineOsc: OscillatorNode | null = null;
   private engineLoop: AudioBufferSourceNode | null = null;
+
+  // Recorded music (published by `npm run music`): 'theme' for the menus, and
+  // one piece per track. One piece plays at a time, looping.
+  private musicInfo: Record<string, { loop?: { start: number; length: number } }> | null = null;
+  private readonly musicBuffers = new Map<string, AudioBuffer>();
+  private musicSource: AudioBufferSourceNode | null = null;
+  /** The piece that should be playing now, even if it has not finished loading. */
+  private musicWanted: string | null = null;
 
   private musicTimer: number | undefined;
   private nextStep = 0;
@@ -202,7 +226,7 @@ class Sound {
     );
 
     // Start every surface loop silent; `surface` fades the right one in.
-    for (const [kind, id] of Object.entries(SURFACE_LOOPS) as [SurfaceSound, SurfaceLoop][]) {
+    for (const id of SURFACE_LOOPS) {
       const buffer = this.samples.get(id);
       if (!buffer || !this.master) continue;
       const source = ctx.createBufferSource();
@@ -212,7 +236,7 @@ class Sound {
       gain.gain.value = 0;
       source.connect(gain).connect(this.master);
       source.start();
-      this.surfaces.set(kind, { source, gain });
+      this.surfaces.set(id, { source, gain });
     }
 
     // Swap the oscillator engine for the recorded loop.
@@ -225,6 +249,67 @@ class Sound {
       this.engineLoop.loop = true;
       this.engineLoop.connect(this.engineGain);
       this.engineLoop.start();
+    }
+  }
+
+  /** Which pieces of recorded music exist, and where each one loops. */
+  private async musicList(): Promise<NonNullable<Sound['musicInfo']>> {
+    if (!this.musicInfo) {
+      try {
+        const res = await fetch(`${MUSIC}manifest.json`);
+        this.musicInfo = res.ok ? ((await res.json()) as NonNullable<Sound['musicInfo']>) : {};
+      } catch {
+        this.musicInfo = {};
+      }
+    }
+    return this.musicInfo;
+  }
+
+  /**
+   * Play a piece of music, looping, in place of whatever was playing: 'theme'
+   * on the menus, or a track's id during a race. A track with no recording of
+   * its own gets the built-in synthesised tune.
+   */
+  playMusic(id: string): void {
+    if (this.musicWanted === id) return;
+    this.stopMusic();
+    this.musicWanted = id;
+    void this.startRecorded(id);
+  }
+
+  private async startRecorded(id: string): Promise<void> {
+    const ctx = this.ctx;
+    if (!ctx) return;
+    let buffer = this.musicBuffers.get(id);
+    const info = (await this.musicList())[id];
+    if (!buffer && info) {
+      try {
+        const data = await (await fetch(`${MUSIC}${id}.mp3`)).arrayBuffer();
+        buffer = await ctx.decodeAudioData(data);
+        this.musicBuffers.set(id, buffer);
+      } catch {
+        // Could not be loaded: fall through to the synthesised tune.
+      }
+    }
+    // Something else may have been asked for while this was loading.
+    if (this.musicWanted !== id || this.musicSource || !this.musicBus) return;
+    if (!buffer) {
+      if (id !== 'theme') this.startTune();
+      return;
+    }
+    const gain = ctx.createGain();
+    gain.gain.value = id === 'theme' ? THEME_VOLUME : RECORDED_VOLUME;
+    this.musicSource = ctx.createBufferSource();
+    this.musicSource.buffer = buffer;
+    this.musicSource.loop = true;
+    this.musicSource.connect(gain).connect(this.musicBus);
+    if (info?.loop) {
+      // A piece prepared as a seamless loop: repeat exactly the marked stretch.
+      this.musicSource.loopStart = info.loop.start;
+      this.musicSource.loopEnd = info.loop.start + info.loop.length;
+      this.musicSource.start(0, info.loop.start);
+    } else {
+      this.musicSource.start();
     }
   }
 
@@ -267,16 +352,17 @@ class Sound {
   }
 
   /**
-   * The sound of the wheels on whatever the player is driving over. `kind` is
-   * null when the kart is in the air or stopped. `speed` is 0..1 of top speed:
-   * a faster kart is louder and slightly higher pitched.
+   * The sound of the wheels on whatever the player is driving over: `kind` is
+   * the loop for that surface on this track, or null when the kart is in the
+   * air or stopped. `speed` is 0..1 of top speed: a faster kart is louder and
+   * slightly higher pitched.
    */
-  surface(kind: SurfaceSound | null, speed: number): void {
+  surface(kind: SurfaceLoopId | null, speed: number): void {
     if (!this.ctx) return;
     const t = this.ctx.currentTime;
     const amount = Math.max(0, Math.min(1.2, speed));
     for (const [name, loop] of this.surfaces) {
-      const level = name === kind ? VOLUME[SURFACE_LOOPS[name]] * Math.min(1, amount * 1.3) : 0;
+      const level = name === kind ? VOLUME[name] * Math.min(1, amount * 1.3) : 0;
       // Cross-fade over about a fifth of a second so changes of surface are smooth, not a cut.
       loop.gain.gain.setTargetAtTime(level, t, 0.07);
       loop.source.playbackRate.setTargetAtTime(0.85 + 0.3 * amount, t, 0.1);
@@ -357,6 +443,14 @@ class Sound {
   splash(): void {
     if (!this.sample('splash')) this.tone(500, 0.45, 'triangle', 0.14, 0, 120);
   }
+  /** Coming down from a jump onto solid ground (water gets `splash`). */
+  land(): void {
+    if (!this.sample('land')) this.tone(140, 0.3, 'triangle', 0.2, 0, 60);
+  }
+  /** Bumping into a rock. */
+  bump(): void {
+    if (!this.sample('bump')) this.tone(180, 0.18, 'triangle', 0.2, 0, 90);
+  }
   hit(): void {
     if (!this.sample('hit')) this.tone(700, 0.5, 'sawtooth', 0.12, 0, 120);
   }
@@ -433,7 +527,8 @@ class Sound {
     this.shaker(t, beat % 2 === 1 ? 0.07 : 0.03);
   }
 
-  startMusic(): void {
+  /** The built-in synthesised racing tune, for tracks without a recording. */
+  private startTune(): void {
     if (!this.ctx || this.musicTimer !== undefined) return;
     this.nextStep = 0;
     this.nextStepTime = this.ctx.currentTime + 0.1;
@@ -450,7 +545,11 @@ class Sound {
     }, 100);
   }
 
+  /** Stop whatever music is playing. */
   stopMusic(): void {
+    this.musicWanted = null;
+    this.musicSource?.stop();
+    this.musicSource = null;
     window.clearInterval(this.musicTimer);
     this.musicTimer = undefined;
   }
