@@ -1,0 +1,36 @@
+{
+  "cell": 256,
+  "pad": 4,
+  "frames": [
+    {
+      "name": "box",
+      "width": 187,
+      "height": 248
+    },
+    {
+      "name": "bone",
+      "width": 246,
+      "height": 248
+    },
+    {
+      "name": "drumstick",
+      "width": 223,
+      "height": 248
+    },
+    {
+      "name": "egg",
+      "width": 190,
+      "height": 248
+    },
+    {
+      "name": "ptero",
+      "width": 248,
+      "height": 162
+    },
+    {
+      "name": "tar",
+      "width": 248,
+      "height": 174
+    }
+  ]
+}
