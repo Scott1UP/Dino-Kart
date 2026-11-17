@@ -1,8 +1,5 @@
 import * as THREE from 'three';
-
-export const SKY_TOP = '#2f7fe0';
-/** Colour of the sky at the horizon; also used for distance haze. */
-export const HAZE = '#c9ecf7';
+import type { Theme } from './layouts';
 
 const RADIUS = 3000;
 const HEIGHT = 900;
@@ -10,11 +7,13 @@ const HEIGHT = 900;
 const SINK = 40;
 
 /**
- * The backdrop: a sky gradient with distant jungle hills and a volcano,
- * wrapped around a big cylinder. Call `follow` each frame so it stays centred
- * on the camera and only ever appears to rotate.
+ * The backdrop: a sky gradient with distant hills (and, in the jungle, a
+ * volcano), in the theme's colours, wrapped around a big cylinder. Call
+ * `follow` each frame so it stays centred on the camera and only ever appears
+ * to rotate. `top` is the sky colour overhead and `haze` the colour at the
+ * horizon, which is also used for the distance haze.
  */
-export function makeSky(): { mesh: THREE.Mesh; follow: (camera: THREE.Camera) => void } {
+export function makeSky(look: Theme['sky']): { mesh: THREE.Mesh; follow: (camera: THREE.Camera) => void } {
   const w = 1024;
   const h = 256;
   const canvas = document.createElement('canvas');
@@ -23,9 +22,9 @@ export function makeSky(): { mesh: THREE.Mesh; follow: (camera: THREE.Camera) =>
   const ctx = canvas.getContext('2d')!;
 
   const sky = ctx.createLinearGradient(0, 0, 0, h);
-  sky.addColorStop(0, SKY_TOP);
-  sky.addColorStop(0.7, HAZE);
-  sky.addColorStop(1, HAZE);
+  sky.addColorStop(0, look.top);
+  sky.addColorStop(0.7, look.haze);
+  sky.addColorStop(1, look.haze);
   ctx.fillStyle = sky;
   ctx.fillRect(0, 0, w, h);
 
@@ -51,7 +50,7 @@ export function makeSky(): { mesh: THREE.Mesh; follow: (camera: THREE.Camera) =>
       ctx.fill();
     }
   };
-  volcano(300);
+  if (look.volcano) volcano(300);
 
   // Rolling hills; heights are sums of sines that repeat exactly over the width.
   const hills = (color: string, base: number, amp: number, k1: number, k2: number, phase: number) => {
@@ -66,9 +65,9 @@ export function makeSky(): { mesh: THREE.Mesh; follow: (camera: THREE.Camera) =>
     ctx.lineTo(w, h);
     ctx.fill();
   };
-  hills('#7fb6c9', 62, 22, 3, 7, 0.5);
-  hills('#58a878', 40, 14, 5, 11, 2.1);
-  hills('#3f9650', 22, 8, 8, 17, 4.0);
+  hills(look.hills[0], 62, 22, 3, 7, 0.5);
+  hills(look.hills[1], 40, 14, 5, 11, 2.1);
+  hills(look.hills[2], 22, 8, 8, 17, 4.0);
 
   const tex = new THREE.CanvasTexture(canvas);
   tex.colorSpace = THREE.SRGBColorSpace;

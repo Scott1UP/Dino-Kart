@@ -1,5 +1,6 @@
 import type { RacerSprite } from './sprites';
-import type { Surface, Track } from './track';
+import type { Surface } from './layouts';
+import type { Track } from './track';
 
 const ACCEL = 70;
 const DRAG = 110; // how fast a kart sheds speed when above the surface's limit
@@ -8,7 +9,20 @@ const STEER_SMOOTH = 9; // higher = snappier steering response
 /** Steering at full lock costs this fraction of top speed, so straight lines are fastest. */
 const TURN_SLOWDOWN = 0.14;
 /** Fraction of top speed available on each surface. */
-const SURFACE_SPEED: Record<Surface, number> = { road: 1, water: 0.92, grass: 0.5 };
+const SURFACE_SPEED: Record<Surface, number> = { road: 1, water: 0.92, ice: 1.04, lake: 1.02, grass: 0.5 };
+/**
+ * Grip: how quickly the direction a kart is actually travelling catches up
+ * with the way it is pointing. High = it goes where it points. Low = it slides:
+ * turn the wheel on ice and the kart swings round first, then drifts into the
+ * new line. Slippery, but it always comes round.
+ */
+const GRIP: Record<Surface, number> = { road: 30, water: 14, ice: 3.8, lake: 4.8, grass: 30 };
+/** Hitting a rock knocks the kart back to this fraction of its speed. */
+const ROCK_SPEED = 0.45;
+/** How close a kart's middle gets to the edge of a rock before it counts as a hit. */
+const KART_RADIUS = 5;
+/** A computer driver steers round a rock that is within this many units of its line. */
+const ROCK_AVOID = 20;
 /** How hard a kart falls once the ground drops away beneath it. */
 const GRAVITY = 170;
 /** The ground has to fall away by more than this in one step for the kart to leave it. */
@@ -58,6 +72,14 @@ export class Kart {
   landedOn: Surface | null = null;
   /** Set for one step when the kart drives onto a boost pad. */
   hitPad = false;
+  /** Set for one step when the kart bumps into a rock. */
+  hitRock = false;
+  private onRock = false;
+  /**
+   * The direction the kart is actually moving, in radians. On grippy ground
+   * this is the same as `heading`; on ice it lags behind, which is the slide.
+   */
+  travel = 0;
   /** Height of whatever is directly under the kart (for its shadow). */
   ground = 0;
   private onPad = false;
@@ -101,6 +123,7 @@ export class Kart {
     this.x = track.xs[index] - Math.sin(h) * lane;
     this.z = track.zs[index] + Math.cos(h) * lane;
     this.heading = h;
+    this.travel = h;
     this.speed = 0;
     this.steer = 0;
     this.spin = 0;
@@ -114,6 +137,8 @@ export class Kart {
     this.landedOn = null;
     this.hitPad = false;
     this.onPad = false;
+    this.hitRock = false;
+    this.onRock = false;
     this.fallSpeed = 0;
     this.progress = index - track.count; // the grid sits just before the line
   }
@@ -121,6 +146,12 @@ export class Kart {
   /** The centre-line sample the kart is on. */
   get index(): number {
     return this.lastIndex;
+  }
+
+  /** How far the kart is pointing away from the way it is moving, in radians (positive = nose to the right). */
+  get drift(): number {
+    const d = this.heading - this.travel;
+    return Math.atan2(Math.sin(d), Math.cos(d));
   }
 
   /** How far off the ground the kart is: it rises and lands smoothly at each end of a flight. */
@@ -149,6 +180,7 @@ export class Kart {
   step(track: Track, steerInput: number, speedScale: number, dt: number): void {
     this.landedOn = null;
     this.hitPad = false;
+    this.hitRock = false;
     if (this.fly > 0) {
       this.flyStep(track, dt);
       // Carried at a steady height above whatever is below.
@@ -190,8 +222,12 @@ export class Kart {
     const grip = Math.min(1, this.speed / 40);
     this.heading += this.steer * TURN_RATE * grip * dt;
 
-    this.x += Math.cos(this.heading) * this.speed * dt;
-    this.z += Math.sin(this.heading) * this.speed * dt;
+    // The kart moves the way it is travelling, which swings round to match the
+    // way it is pointing: at once on a grippy surface, lazily on ice.
+    this.travel += this.drift * (1 - Math.exp(-GRIP[here.surface] * dt));
+    this.x += Math.cos(this.travel) * this.speed * dt;
+    this.z += Math.sin(this.travel) * this.speed * dt;
+    this.bumpRocks(track);
     this.settle(track);
     this.followGround(track, dt);
 
@@ -202,6 +238,28 @@ export class Kart {
       this.hitPad = true;
     }
     this.onPad = pad;
+  }
+
+  /** Rocks on the road: the kart is pushed back out of any it touches, and loses speed once per bump. */
+  private bumpRocks(track: Track): void {
+    let touching = false;
+    for (const rock of track.rocks) {
+      if (Math.abs(this.y - rock.y) > BUMP_HEIGHT) continue;
+      const dx = this.x - rock.x;
+      const dz = this.z - rock.z;
+      const d = Math.hypot(dx, dz);
+      const reach = rock.radius + KART_RADIUS;
+      if (d >= reach || d === 0) continue;
+      touching = true;
+      this.x = rock.x + (dx / d) * reach;
+      this.z = rock.z + (dz / d) * reach;
+    }
+    if (touching && !this.onRock) {
+      this.speed *= ROCK_SPEED;
+      this.boost = 0;
+      this.hitRock = true;
+    }
+    this.onRock = touching;
   }
 
   /**
@@ -240,6 +298,7 @@ export class Kart {
     this.steer += (0 - this.steer) * Math.min(1, STEER_SMOOTH * dt);
     const turn = this.aim(track, 0);
     this.heading += Math.max(-FLY_TURN * dt, Math.min(FLY_TURN * dt, turn));
+    this.travel = this.heading;
     this.speed = Math.min(FLY_SPEED, this.speed + ACCEL * 6 * dt);
     this.x += Math.cos(this.heading) * this.speed * dt;
     this.z += Math.sin(this.heading) * this.speed * dt;
@@ -294,7 +353,17 @@ export class Kart {
 
   /** Steering a computer driver would apply right now, -1..1. */
   autoSteer(track: Track): number {
-    return Math.max(-1, Math.min(1, this.aim(track, this.lane) * 2.5));
+    // Hold the usual lane, but move over for the next rock if it is on that line.
+    let lane = this.lane;
+    let nearest = AI_LOOK_AHEAD * 3.5; // far enough ahead to move over in time, even sliding on ice
+    for (const rock of track.rocks) {
+      const gap = track.ahead(this.lastIndex, rock.sample);
+      if (gap > nearest) continue;
+      nearest = gap;
+      // Pass on whichever side there is more road.
+      lane = Math.abs(rock.lane - this.lane) > ROCK_AVOID ? this.lane : rock.lane + (rock.lane > 0 ? -1 : 1) * (ROCK_AVOID + 6);
+    }
+    return Math.max(-1, Math.min(1, this.aim(track, lane) * 2.5));
   }
 }
 

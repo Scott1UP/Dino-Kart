@@ -123,7 +123,7 @@ export class ItemSystem {
   player: Kart | null = null;
 
   constructor(
-    private readonly scene: THREE.Scene,
+    private readonly scene: THREE.Object3D,
     private readonly track: Track,
     private readonly kit: SpriteKit,
     private readonly karts: Kart[],
