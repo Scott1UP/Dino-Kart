@@ -1,0 +1,56 @@
+{
+  "cell": 256,
+  "pad": 4,
+  "frames": [
+    {
+      "name": "pine",
+      "width": 201,
+      "height": 248
+    },
+    {
+      "name": "snowBoulder",
+      "width": 248,
+      "height": 230
+    },
+    {
+      "name": "crystals",
+      "width": 184,
+      "height": 248
+    },
+    {
+      "name": "iceRock",
+      "width": 248,
+      "height": 231
+    },
+    {
+      "name": "trexIce",
+      "width": 224,
+      "height": 248
+    },
+    {
+      "name": "trikeStatue",
+      "width": 248,
+      "height": 240
+    },
+    {
+      "name": "pteroFossil",
+      "width": 248,
+      "height": 242
+    },
+    {
+      "name": "sauropod",
+      "width": 209,
+      "height": 248
+    },
+    {
+      "name": "skullArch",
+      "width": 248,
+      "height": 239
+    },
+    {
+      "name": "snowNest",
+      "width": 248,
+      "height": 195
+    }
+  ]
+}

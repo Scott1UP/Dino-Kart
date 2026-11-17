@@ -577,6 +577,40 @@ const OBJECT_SHEETS = {
       ],
     },
   ],
+  // Glacier Glide: snowy scenery, things to dodge, and the ice-age landmarks.
+  snow: [
+    {
+      raw: 'snow1',
+      names: ['pine', 'snowBoulder', 'crystals', 'iceRock'],
+      view: SIDE_VIEW,
+      objects: [
+        'first, a chunky cartoon pine tree with thick layers of white snow on its dark green branches',
+        'second, a big rounded grey boulder with a thick cap of white snow on top',
+        'third, a cluster of tall pale-blue ice crystals growing out of a small mound of snow',
+        'fourth, a jagged lump of bright blue glacier ice, like a small iceberg, with frosty white edges',
+      ],
+    },
+    {
+      raw: 'snow2',
+      names: ['trexIce', 'trikeStatue', 'pteroFossil', 'sauropod'],
+      view: SIDE_VIEW,
+      objects: [
+        'first, a huge block of clear pale-blue glacier ice with a complete cream-white T-rex skeleton frozen inside it, the skull with big rounded teeth clearly visible, snow on top of the block',
+        'second, a big friendly statue of a triceratops carved out of pale grey-blue ice, standing on a snowy rock base, with cream-white horns and a dusting of snow on its frill and back',
+        'third, a large upright slab of grey rock with a snowy top, and the cream-white fossil skeleton of a pterodactyl with its wings spread wide embedded in the face of the slab',
+        'fourth, a huge friendly purple cartoon brachiosaurus standing on four legs with its long neck up, smiling, wearing a little red woolly scarf, with snow on its back',
+      ],
+    },
+    {
+      raw: 'snow3',
+      names: ['skullArch', 'snowNest'],
+      view: 'Each is seen straight on from the front at eye level.',
+      objects: [
+        'on the left, an archway made from a gigantic cream-white fossil T-rex skull with its jaws wide open, seen from the front: the upper jaw with big rounded teeth forms the top of the arch, two thick pillars of blue glacier ice hold it up at the sides, snow lies on top, and the wide opening underneath is completely empty so that go-karts can drive through it',
+        'on the right, a round nest made of icy twigs and snow holding three big pastel-purple dinosaur eggs with pale blue spots',
+      ],
+    },
+  ],
   items: [
     {
       raw: 'items',
@@ -721,6 +755,6 @@ else if (cmd === 'all') {
     await pack(id);
   }
 } else {
-  console.log('usage: npm run sprites -- <ref|sheet|avatar|pack|all|scenery|props|items> [racer ids...]');
+  console.log('usage: npm run sprites -- <ref|sheet|avatar|pack|all|scenery|props|snow|items> [racer ids...]');
   process.exit(1);
 }
