@@ -1,0 +1,9 @@
+# Netlify build settings. The build needs no API keys: all generated art and
+# audio is already checked in under public/.
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  # The Vite version in this project needs a recent Node.
+  NODE_VERSION = "22"
