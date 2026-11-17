@@ -12,6 +12,29 @@
     <meta name="apple-mobile-web-app-title" content="Dino Kart" />
     <meta name="theme-color" content="#2f7fe0" />
     <title>Dino Kart</title>
+    <meta
+      name="description"
+      content="A cheerful dinosaur go-kart racer. Pick your dino, grab items and race to the finish, right in your browser."
+    />
+    <link rel="icon" href="./favicon.ico" sizes="48x48" />
+    <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+
+    <!-- Link previews. %SITE_URL% is filled in by the build (see vite.config.ts), because
+         these have to be full addresses. -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Dino Kart" />
+    <meta property="og:title" content="Dino Kart" />
+    <meta
+      property="og:description"
+      content="A cheerful dinosaur go-kart racer. Pick your dino, grab items and race to the finish, right in your browser."
+    />
+    <meta property="og:url" content="%SITE_URL%/" />
+    <meta property="og:image" content="%SITE_URL%/og.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="The Dino Kart logo: a grinning T-rex driving a red go-kart." />
+    <meta name="twitter:card" content="summary_large_image" />
   </head>
   <body>
     <canvas id="game"></canvas>
