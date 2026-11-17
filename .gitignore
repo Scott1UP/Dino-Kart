@@ -17,6 +17,7 @@ art/sfx/
 
 # track design packs (source material, local only; the game uses src/tracks/*.json)
 Glacier_Glide/
+dino_cart_claude_code_pack/
 
 # music takes for auditioning (local only; the picked ones are copied to public/audio/music)
 art/music/
