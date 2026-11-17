@@ -103,5 +103,39 @@
     "seconds": 4,
     "loop": true,
     "pick": 1
+  },
+  "surfaceSnow": {
+    "prompt": "Seamless loop: small go-kart tyres rolling steadily over firm packed snow. A soft, even, continuous squeaky crunch. No engine, no wind, no music.",
+    "seconds": 4,
+    "loop": true,
+    "pick": 1
+  },
+  "surfaceIce": {
+    "prompt": "Seamless loop: a small go-kart sliding steadily across smooth hard ice. A continuous light, hissing, glassy skidding glide with a faint high shimmer. No engine, no cracking, no music.",
+    "seconds": 4,
+    "loop": true,
+    "pick": 1
+  },
+  "surfaceLake": {
+    "prompt": "Seamless loop: wheels gliding over a frozen lake. A continuous soft, hollow, glassy scraping with deep muffled ice resonance underneath. No engine, no loud cracks, no music.",
+    "seconds": 4,
+    "loop": true,
+    "pick": 1
+  },
+  "surfacePowder": {
+    "prompt": "Seamless loop: a small go-kart ploughing slowly through deep soft powder snow. A continuous muffled whooshing and soft fluffy crumbling. No engine, no wind, no music.",
+    "seconds": 4,
+    "loop": true,
+    "pick": 1
+  },
+  "bump": {
+    "prompt": "A cartoon go-kart bumping into a lump of ice: one short, soft, rubbery bonk with a little icy clink. Gentle and funny, not a crash. Children's game.",
+    "seconds": 0.7,
+    "pick": 1
+  },
+  "land": {
+    "prompt": "A cartoon go-kart landing after a jump onto snow and ice: one soft, cushioned whump with a short icy slide and a sprinkle of snow. Gentle and satisfying, not a crash. Children's game.",
+    "seconds": 1.0,
+    "pick": 1
   }
 }

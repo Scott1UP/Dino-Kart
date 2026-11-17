@@ -78,5 +78,29 @@
   "surfaceGrass": {
     "take": 1,
     "loop": true
+  },
+  "surfaceSnow": {
+    "take": 1,
+    "loop": true
+  },
+  "surfaceIce": {
+    "take": 1,
+    "loop": true
+  },
+  "surfaceLake": {
+    "take": 1,
+    "loop": true
+  },
+  "surfacePowder": {
+    "take": 1,
+    "loop": true
+  },
+  "bump": {
+    "take": 1,
+    "loop": false
+  },
+  "land": {
+    "take": 1,
+    "loop": false
   }
 }
