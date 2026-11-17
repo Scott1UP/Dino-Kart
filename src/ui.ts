@@ -6,11 +6,12 @@
 const el = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const SPRITES = `${import.meta.env.BASE_URL}sprites/`;
 
-export type Screen = 'title' | 'select' | 'race' | 'pause' | 'settings' | 'finish';
+export type Screen = 'title' | 'select' | 'tracks' | 'race' | 'pause' | 'settings' | 'finish';
 
 const screens: Record<Exclude<Screen, 'race'>, HTMLElement> = {
   title: el('title'),
   select: el('select'),
+  tracks: el('tracks'),
   pause: el('pause'),
   settings: el('settings'),
   finish: el('finish'),
@@ -34,14 +35,22 @@ const standings = el('standings');
 const confetti = el('confetti');
 const soundButton = el<HTMLButtonElement>('sound');
 const racerList = el('racers');
+const trackList = el('track-list');
 const pickTitle = el('pick-title');
 const go = el<HTMLButtonElement>('go');
+const trackTitle = el('track-title');
+const goTrack = el<HTMLButtonElement>('go-track');
 itemIcon.style.backgroundImage = `url(${SPRITES}items.png)`;
 fireIcon.style.backgroundImage = `url(${SPRITES}items.png)`;
 
 const SUFFIX = ['st', 'nd', 'rd'];
 const suffix = (n: number) => SUFFIX[n - 1] ?? 'th';
 const CONFETTI_COLORS = ['#ff5e7e', '#ffc21f', '#6fd03c', '#3bb4f6', '#b58cff'];
+
+export interface TrackChoice {
+  id: string;
+  name: string;
+}
 
 export interface RacerChoice {
   id: string;
@@ -54,6 +63,8 @@ export interface RacerChoice {
 
 let racers: RacerChoice[] = [];
 let selected: string | null = null;
+let tracks: TrackChoice[] = [];
+let selectedTrack: string | null = null;
 let lastLap = '';
 let lastPlace = 0;
 let lastBanner = '';
@@ -82,12 +93,25 @@ function select(id: string | null): void {
   pickTitle.textContent = racer ? `${racer.name}!` : 'Pick your dino!';
 }
 
+function selectTrack(id: string | null): void {
+  selectedTrack = id;
+  for (const card of trackList.querySelectorAll<HTMLElement>('.track-card')) {
+    card.classList.toggle('selected', card.dataset.id === id);
+    card.classList.toggle('dim', id !== null && card.dataset.id !== id);
+    card.setAttribute('aria-pressed', String(card.dataset.id === id));
+  }
+  goTrack.classList.toggle('show', id !== null);
+  const track = tracks.find((t) => t.id === id);
+  trackTitle.textContent = track ? `${track.name}!` : 'Pick a track!';
+}
+
 export const ui = {
   /** Show one screen. 'race' shows just the in-race display; pause and finish sit on top of it. */
   show(screen: Screen): void {
     if (screen === 'select') select(null);
+    if (screen === 'tracks') selectTrack(null);
     for (const [name, node] of Object.entries(screens)) node.classList.toggle('hidden', name !== screen);
-    hud.classList.toggle('hidden', screen === 'title' || screen === 'select');
+    hud.classList.toggle('hidden', screen === 'title' || screen === 'select' || screen === 'tracks');
   },
 
   /**
@@ -121,6 +145,43 @@ export const ui = {
     );
     go.addEventListener('click', () => {
       if (selected) onPick(selected);
+    });
+  },
+
+  /**
+   * Build the track select cards, each with a picture taken on that track
+   * (public/covers/<id>.jpg, made by `npm run capture`). As with the racers,
+   * the first tap on a card selects that track (`onSelect`); tapping it
+   * again, or the Go button, confirms (`onPick`).
+   */
+  setTracks(list: TrackChoice[], onSelect: (id: string) => void, onPick: (id: string) => void): void {
+    tracks = list;
+    trackList.replaceChildren(
+      ...list.map((track) => {
+        const card = document.createElement('button');
+        card.type = 'button';
+        card.className = 'track-card';
+        card.dataset.id = track.id;
+        const cover = document.createElement('img');
+        cover.src = `${import.meta.env.BASE_URL}covers/${track.id}.jpg`;
+        cover.alt = '';
+        cover.width = 640;
+        cover.height = 400;
+        cover.draggable = false;
+        const name = document.createElement('span');
+        name.className = 'track-name';
+        name.textContent = track.name;
+        card.append(cover, name);
+        card.addEventListener('click', () => {
+          if (selectedTrack === track.id) return onPick(track.id);
+          selectTrack(track.id);
+          onSelect(track.id);
+        });
+        return card;
+      }),
+    );
+    goTrack.addEventListener('click', () => {
+      if (selectedTrack) onPick(selectedTrack);
     });
   },
 

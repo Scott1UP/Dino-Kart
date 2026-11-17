@@ -3,14 +3,15 @@ import '@fontsource/fredoka/600.css';
 import '@fontsource/fredoka/700.css';
 import './style.css';
 import * as THREE from 'three';
-import { sound, type SurfaceSound } from './audio';
+import { sound } from './audio';
 import { Input } from './input';
 import { ItemSystem, type ItemEvent } from './items';
 import { Kart, separate } from './kart';
+import { LAYOUTS, THEMES, type Layout, type SurfaceLoopId } from './layouts';
 import { makeRng } from './rng';
-import { HAZE, SKY_TOP, makeSky } from './sky';
+import { makeSky } from './sky';
 import { loadKit, loadRacer, type SpriteKit } from './sprites';
-import { GRASS, ROAD_HALF, Track, WALL_DIST } from './track';
+import { Track, WALL_DIST } from './track';
 import { ui } from './ui';
 import { voice, type VoiceLine } from './voice';
 
@@ -26,7 +27,6 @@ const RETRO_KEY = 'dino-kart-retro';
 const MAX_PIXEL_RATIO = 2;
 
 const RACER_IDS = ['rex', 'trike', 'stego', 'raptor', 'brachio', 'ptero'];
-const LAPS = 3;
 /**
  * Speed classes. 125cc is the base game; the others multiply every kart's top
  * speed. The track's tightest bend can still be driven at 200cc without
@@ -76,15 +76,19 @@ const STEER_VIEW_ANGLE = 22;
 /** The view of each racer shown on its character select card (front three-quarter). */
 const PORTRAIT_ANGLE = 157;
 
-const TREE_COUNT = 520;
-const BUSH_COUNT = 140;
-const BOULDER_COUNT = 60;
+const TRACK_KEY = 'dino-kart-track';
 /** The camera never dips closer to the ground than this (it would end up inside a cliff). */
 const CAM_CLEARANCE = 7;
 
 // ---- Renderer -----------------------------------------------------------------
 const canvas = document.getElementById('game') as HTMLCanvasElement;
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+/**
+ * Capture mode (`?capture` in the address): no menus and no clock of its own.
+ * `scripts/capture.mjs` drives it one frame at a time to take the track cover
+ * pictures and the title-screen video.
+ */
+const CAPTURE = new URLSearchParams(location.search).has('capture');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: CAPTURE });
 renderer.setPixelRatio(1);
 
 function readRetro(): boolean {
@@ -107,8 +111,6 @@ function readSpeedClass(): number {
 let speedClass = readSpeedClass();
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(SKY_TOP);
-scene.fog = new THREE.Fog(HAZE, 320, 1700);
 const camera = new THREE.PerspectiveCamera(CAM_FOV, 1, 1, 6000);
 
 function resize(): void {
@@ -122,108 +124,11 @@ function resize(): void {
 window.addEventListener('resize', resize);
 resize();
 
-// ---- World --------------------------------------------------------------------
-const track = new Track();
-track.texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
-
-scene.add(track.makeGround(), track.makeFences(), track.makeBridge());
-const water = track.makeWater();
-scene.add(water.object);
-
-// Plain grass out to the horizon, beyond the edge of the terrain.
-const outer = new THREE.Mesh(
-  new THREE.PlaneGeometry(12000, 12000),
-  new THREE.MeshBasicMaterial({ color: GRASS }),
-);
-outer.rotation.x = -Math.PI / 2;
-outer.position.set(track.centre.x, -0.5, track.centre.z);
-scene.add(outer);
-
-const sky = makeSky();
-scene.add(sky.mesh);
-
-/** Stand a scenery sprite on the ground at a point. */
-function place(sprite: THREE.Sprite, x: number, z: number): void {
-  sprite.position.set(x, track.heightAt(x, z), z);
-  scene.add(sprite);
-}
-
-/**
- * Scatter something along both sides of the track, between `near` and `far`
- * units beyond the soft wall. `make` is given a random-number source and
- * returns the sprite to plant.
- */
-function scatter(
-  count: number,
-  near: number,
-  far: number,
-  seed: number,
-  make: (rand: () => number) => THREE.Sprite,
-): void {
-  const rand = makeRng(seed);
-  let planted = 0;
-  for (let tries = 0; planted < count && tries < count * 25; tries++) {
-    const i = Math.floor(rand() * track.count);
-    const heading = track.headingAt(i);
-    const side = rand() < 0.5 ? -1 : 1;
-    const offset = WALL_DIST + near + rand() * rand() * (far - near); // denser close to the track
-    const x = track.xs[i] - Math.sin(heading) * offset * side;
-    const z = track.zs[i] + Math.cos(heading) * offset * side;
-    // The point can land near a different stretch of road, especially inside bends.
-    if (track.query(x, z).dist < WALL_DIST + near - 2) continue;
-    place(make(rand), x, z);
-    planted++;
-  }
-}
-
-function buildScenery(trees: SpriteKit, props: SpriteKit): void {
-  // Jungle, thickest right beside the road.
-  scatter(TREE_COUNT, 8, 190, 7, (rand) => {
-    const pick = rand();
-    return pick < 0.45
-      ? trees.make('palm', 58 + rand() * 24, rand() < 0.5)
-      : pick < 0.7
-        ? trees.make('cycad', 30 + rand() * 12, rand() < 0.5)
-        : trees.make('fern', 11 + rand() * 6, rand() < 0.5);
-  });
-  scatter(BUSH_COUNT, 5, 70, 21, (rand) => props.make('bush', 10 + rand() * 7, rand() < 0.5));
-  scatter(BOULDER_COUNT, 7, 120, 33, (rand) => props.make('boulder', 9 + rand() * 20, rand() < 0.5));
-
-  // The landmarks from the track design, inside the west loop.
-  place(props.make('volcano', 190), 540, 640);
-  place(props.make('skull', 60), 650, 905);
-  place(props.make('nest', 28), 385, 860);
-  // Dinosaurs watching from the outside of the big corners.
-  place(props.make('brachio', 120), 140, 190);
-  place(props.make('trike', 48, true), 1895, 400);
-  place(props.make('trike', 40), 1420, 1140);
-
-  // Start line: a banner over the road with torches along the straight.
-  const bannerWidth = ROAD_HALF * 2 + 34;
-  place(props.make('banner', bannerWidth / props.aspect('banner')), track.xs[0], track.zs[0]);
-  for (let n = 0; n < 4; n++) {
-    const sample = track.count - 6 + n * 24;
-    for (const side of [-1, 1]) place(props.make('torch', 24), ...track.beside(sample, side * (ROAD_HALF + 12)));
-  }
-
-  // Arrow signs on the outside of the corners, pointing the way the road turns.
-  for (const waypoint of [2.6, 7.6, 12.4, 19.6, 23.5, 26.6, 30.2, 35.6]) {
-    const sample = track.sampleAt(waypoint);
-    const turn = track.headingAt(sample + 14) - track.headingAt(sample - 14);
-    const right = Math.atan2(Math.sin(turn), Math.cos(turn)) > 0;
-    // The sign's arrow points right as drawn; mirrored for a left-hand corner.
-    place(props.make('sign', 22, !right), ...track.beside(sample, (right ? -1 : 1) * (WALL_DIST + 12)));
-  }
-}
-
 // ---- Racers ------------------------------------------------------------------
-const [racerSprites, scenery, props, itemKit] = await Promise.all([
+const [racerSprites, itemKit] = await Promise.all([
   Promise.all(RACER_IDS.map((id) => loadRacer(id, KART_SIZE))),
-  loadKit('scenery'),
-  loadKit('props'),
   loadKit('items'),
 ]);
-buildScenery(scenery, props);
 
 const karts = racerSprites.map((sprite, i) => new Kart(RACER_IDS[i], sprite));
 /** The kart the human drives (and the camera follows). */
@@ -246,6 +151,177 @@ const shadows = karts.map((kart) => {
 });
 
 const input = new Input(canvas);
+
+/**
+ * The film behind the menus (made by `npm run capture`). While it is playing
+ * the game itself is neither simulated nor drawn; if it cannot be played, the
+ * karts circle the track behind the menus instead.
+ */
+const menuVideo = document.getElementById('menu-video') as HTMLVideoElement;
+let menuVideoPlaying = false;
+menuVideo.addEventListener('playing', () => (menuVideoPlaying = true));
+menuVideo.addEventListener('pause', () => (menuVideoPlaying = false));
+menuVideo.addEventListener('error', () => (menuVideoPlaying = false));
+function showMenuVideo(show: boolean): void {
+  menuVideo.classList.toggle('hidden', !show);
+  if (show) void menuVideo.play().catch(() => (menuVideoPlaying = false));
+  else menuVideo.pause();
+}
+
+// ---- World: the track and everything on it, rebuilt when a different track is chosen ----
+let track!: Track;
+let items!: ItemSystem;
+let water!: ReturnType<Track['makeWater']>;
+let sky!: ReturnType<typeof makeSky>;
+/** Holds every object that belongs to the current track, so it can all be removed together. */
+let world = new THREE.Group();
+
+/** Sprite sheets, loaded once and kept: tracks with the same theme share them. */
+const kits = new Map<string, SpriteKit>();
+async function getKit(name: string): Promise<SpriteKit> {
+  let kit = kits.get(name);
+  if (!kit) {
+    kit = await loadKit(name);
+    kits.set(name, kit);
+  }
+  return kit;
+}
+const kit = (name: string): SpriteKit => {
+  const found = kits.get(name);
+  if (!found) throw new Error(`sprite sheet "${name}" is not loaded (add it to the theme's kits)`);
+  return found;
+};
+
+/** Stand a scenery sprite on the ground at a point. */
+function place(sprite: THREE.Sprite, x: number, z: number, y = track.heightAt(x, z)): void {
+  sprite.position.set(x, y, z);
+  world.add(sprite);
+}
+
+/**
+ * Scatter something along both sides of the track, between `near` and `far`
+ * units beyond the soft wall. `make` is given a random-number source and
+ * returns the sprite to plant.
+ */
+function scatter(
+  count: number,
+  near: number,
+  far: number,
+  seed: number,
+  make: (rand: () => number) => THREE.Sprite,
+): void {
+  const rand = makeRng(seed);
+  let planted = 0;
+  for (let tries = 0; planted < count && tries < count * 25; tries++) {
+    const i = Math.floor(rand() * track.count);
+    const side = rand() < 0.5 ? -1 : 1;
+    const offset = WALL_DIST + near + rand() * rand() * (far - near); // denser close to the track
+    const [x, z] = track.beside(i, offset * side);
+    // The point can land near a different stretch of road, especially inside bends.
+    if (track.query(x, z).dist < WALL_DIST + near - 2) continue;
+    place(make(rand), x, z);
+    planted++;
+  }
+}
+
+function buildScenery(layout: Layout): void {
+  const { scenery } = layout;
+  for (const spec of scenery.scatter) {
+    scatter(spec.count, spec.near, spec.far, spec.seed, (rand) =>
+      kit(spec.sheet).make(spec.sprite, spec.min + rand() * (spec.max - spec.min), rand() < 0.5),
+    );
+  }
+  for (const mark of scenery.landmarks) {
+    place(kit(mark.sheet).make(mark.sprite, mark.height, mark.mirror), mark.x, mark.y);
+  }
+  // Rocks on the road, drawn a little bigger than the circle that karts bump into.
+  for (const rock of track.rocks) {
+    place(kit(rock.sheet).make(rock.sprite, rock.radius * 2.1), rock.x, rock.z, rock.y);
+  }
+  // Things that stand over the road to be driven through.
+  for (const arch of scenery.arches) {
+    const sample = track.sampleAt(arch.waypoint);
+    const sheet = kit(arch.sheet);
+    place(
+      sheet.make(arch.sprite, arch.width / sheet.aspect(arch.sprite)),
+      track.xs[sample],
+      track.zs[sample],
+      track.roadY(sample),
+    );
+  }
+
+  // Start line: a banner over the road with torches along the straight.
+  const props = kit('props');
+  const bannerWidth = track.roadHalf * 2 + 34;
+  place(props.make('banner', bannerWidth / props.aspect('banner')), track.xs[0], track.zs[0]);
+  for (let n = 0; n < 4; n++) {
+    const sample = track.count - 6 + n * 24;
+    for (const side of [-1, 1]) {
+      place(props.make('torch', 24), ...track.beside(sample, side * (track.roadHalf + 12)));
+    }
+  }
+
+  // Arrow signs on the outside of the corners, pointing the way the road turns.
+  for (const waypoint of scenery.signs) {
+    const sample = track.sampleAt(waypoint);
+    const turn = track.headingAt(sample + 14) - track.headingAt(sample - 14);
+    const right = Math.atan2(Math.sin(turn), Math.cos(turn)) > 0;
+    // The sign's arrow points right as drawn; mirrored for a left-hand corner.
+    place(props.make('sign', 22, !right), ...track.beside(sample, (right ? -1 : 1) * (WALL_DIST + 12)));
+  }
+}
+
+function readTrackId(): string {
+  try {
+    return localStorage.getItem(TRACK_KEY) ?? LAYOUTS[0].id;
+  } catch {
+    return LAYOUTS[0].id;
+  }
+}
+
+/** Build a track and everything on it, replacing whichever one was there before. */
+async function loadTrack(id: string): Promise<void> {
+  const layout = LAYOUTS.find((l) => l.id === id) ?? LAYOUTS[0];
+  if (track?.layout === layout) return;
+  const theme = THEMES[layout.theme];
+  await Promise.all(theme.kits.map(getKit));
+
+  // Clear away the old track. Sprites share their materials with the sheets
+  // they came from, which are kept; everything else was made for that track.
+  scene.remove(world);
+  world.traverse((object) => {
+    if (!(object instanceof THREE.Mesh)) return;
+    object.geometry.dispose();
+    const material = object.material as THREE.MeshBasicMaterial;
+    material.map?.dispose();
+    material.dispose();
+  });
+  world = new THREE.Group();
+  scene.add(world);
+
+  track = new Track(layout, theme);
+  track.texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  water = track.makeWater();
+  sky = makeSky(theme.sky);
+  // Plain ground out to the horizon, beyond the edge of the terrain.
+  const outer = new THREE.Mesh(
+    new THREE.PlaneGeometry(12000, 12000),
+    new THREE.MeshBasicMaterial({ color: theme.plain }),
+  );
+  outer.rotation.x = -Math.PI / 2;
+  outer.position.set(track.centre.x, -0.5, track.centre.z);
+  world.add(track.makeGround(), track.makeFences(), track.makeBridges(), water.object, outer, sky.mesh);
+  scene.background = new THREE.Color(theme.sky.top);
+  scene.fog = new THREE.Fog(theme.sky.haze, 320, 1700);
+  buildScenery(layout);
+
+  items = new ItemSystem(world, track, itemKit, karts, onItemEvent);
+  try {
+    localStorage.setItem(TRACK_KEY, layout.id);
+  } catch {
+    // Storage unavailable (private window): the choice just won't be remembered.
+  }
+}
 
 // ---- Game state ---------------------------------------------------------------
 /** 'demo' = karts circling by themselves behind the title and character select screens. */
@@ -271,7 +347,7 @@ function onItemEvent(event: ItemEvent, kart: Kart): void {
   else if (event === 'ptero') sound.ptero();
   else sound.hit();
 }
-const items = new ItemSystem(scene, track, itemKit, karts, onItemEvent);
+await loadTrack(readTrackId());
 
 /** Line the karts up two by two just behind the start line, in the order given (first = front). */
 function lineUp(order: Kart[]): void {
@@ -292,7 +368,8 @@ function startDemo(): void {
   });
   items.player = null;
   lineUp(karts);
-  sound.stopMusic();
+  sound.playMusic('theme');
+  showMenuVideo(true);
 }
 
 function startRace(playerId: string): void {
@@ -318,7 +395,8 @@ function startRace(playerId: string): void {
   finishers = 0;
   lapShown = 1;
   ui.show('race');
-  sound.startMusic();
+  sound.playMusic(track.layout.id);
+  showMenuVideo(false);
 }
 
 function pause(): void {
@@ -347,7 +425,26 @@ ui.setRacers(
     sound.unlock();
     sound.tap();
     voice.stop();
-    startRace(id);
+    chosenRacer = id;
+    ui.show('tracks');
+  },
+);
+/** The racer picked on the character select screen, waiting for a track to be chosen. */
+let chosenRacer = karts[0].id;
+ui.setTracks(
+  LAYOUTS.map((layout) => ({ id: layout.id, name: layout.name })),
+  // First tap: the track is announced. Second tap, or Go: start the race.
+  (id) => {
+    sound.unlock();
+    sound.tap();
+    voice.say(`track.${id}` as VoiceLine);
+  },
+  (id) => {
+    sound.unlock();
+    sound.tap();
+    voice.stop();
+    // Building a track takes a moment; start the race as soon as it is ready.
+    void loadTrack(id).then(() => startRace(chosenRacer));
   },
 );
 ui.setSound(sound.enabled);
@@ -440,6 +537,19 @@ document.addEventListener('visibilitychange', () => {
 
 startDemo();
 ui.show('title');
+// Browsers only allow sound after a tap, so the title theme starts with the first touch anywhere.
+window.addEventListener(
+  'pointerdown',
+  () => {
+    sound.unlock();
+    // The theme was asked for before sound was allowed; ask again now that it is.
+    if (mode === 'demo') {
+      sound.stopMusic();
+      sound.playMusic('theme');
+    }
+  },
+  { once: true },
+);
 
 // ---- Simulation -----------------------------------------------------------------
 /** 1 = leading. Karts that have finished keep their finishing place. */
@@ -477,9 +587,13 @@ function updateRace(dt: number, time: number): void {
     goTimer = Math.max(0, goTimer - dt);
 
     // After the finish the player's kart drives itself on a victory lap.
-    player.step(track, phase === 'racing' ? input.steer : player.autoSteer(track), 1, dt);
+    // After the finish (and in capture mode) the player's kart drives itself.
+    player.step(track, phase === 'racing' && !CAPTURE ? input.steer : player.autoSteer(track), 1, dt);
+    // Coming down from a jump: a splash into water, a thump onto anything else.
     if (player.landedOn === 'water') sound.splash();
+    else if (player.landedOn) sound.land();
     if (player.hitPad) sound.boost();
+    if (player.hitRock) sound.bump();
     for (const rival of rivals) {
       const gap = rival.progress - player.progress;
       const band = Math.max(RUBBER_BAND_MIN, Math.min(RUBBER_BAND_MAX, 1 - gap / RUBBER_BAND_GAP));
@@ -489,9 +603,9 @@ function updateRace(dt: number, time: number): void {
     items.update(dt, time, placeOf);
 
     for (const kart of karts) {
-      if (!kart.place && kart.progress >= LAPS * track.count) kart.place = ++finishers;
+      if (!kart.place && kart.progress >= track.layout.laps * track.count) kart.place = ++finishers;
     }
-    if (phase === 'racing' && player.place) {
+    if (phase === 'racing' && player.place && !CAPTURE) {
       phase = 'finished';
       // The standings at the moment the player crosses the line: finishers in
       // order, then everyone still racing by how far round they are.
@@ -503,10 +617,10 @@ function updateRace(dt: number, time: number): void {
     }
   }
 
-  const lap = Math.min(LAPS, Math.floor(Math.max(0, player.progress) / track.count) + 1);
+  const lap = Math.min(track.layout.laps, Math.floor(Math.max(0, player.progress) / track.count) + 1);
   if (lap > lapShown && phase === 'racing') sound.lap();
   lapShown = lap;
-  ui.setLap(lap, LAPS);
+  ui.setLap(lap, track.layout.laps);
   ui.setPlace(placeOf(player), karts.length);
   ui.setBanner(phase === 'countdown' ? String(Math.ceil(countdown)) : goTimer > 0 ? 'GO!' : '');
   const shown = items.playerDisplay(time);
@@ -519,9 +633,10 @@ function updateRace(dt: number, time: number): void {
   const pace = player.speed / player.topSpeed;
   sound.engine(pace, phase === 'finished' ? 0.4 : 1);
   // What the wheels are on. Silent in the air (off the waterfall, or carried by the pterodactyl).
-  let under: SurfaceSound | null = null;
+  let under: SurfaceLoopId | null = null;
   if (!player.airborne && player.fly <= 0) {
-    under = track.onBridge(player.index) ? 'bridge' : track.query(player.x, player.z, player.index).surface;
+    const on = track.onBridge(player.index) ? 'bridge' : track.query(player.x, player.z, player.index).surface;
+    under = track.theme.sounds[on];
   }
   sound.surface(under, phase === 'finished' ? pace * 0.4 : pace);
 }
@@ -564,8 +679,10 @@ function render(time: number): void {
 
     if (kart === player) {
       // Always seen from behind; lean the sprite into the turn.
+      // On ice the kart swings further round than it is travelling: show the slide.
       const lean = Math.abs(kart.steer) > 0.35 ? Math.sign(kart.steer) * STEER_VIEW_ANGLE : 0;
-      kart.sprite.setView(lean + spin);
+      const slide = kart.drift * DEG;
+      kart.sprite.setView((Math.abs(slide) > Math.abs(lean) ? slide : lean) + spin);
       // In case this kart was a faded rival in the last race.
       kart.sprite.setOpacity(1);
       shadows[i].visible = true;
@@ -590,12 +707,72 @@ let last = performance.now();
 function frame(now: number): void {
   const dt = Math.min(0.05, (now - last) / 1000);
   last = now;
-  if (!paused) {
-    if (mode === 'race') updateRace(dt, now / 1000);
-    else updateDemo(dt, now / 1000);
+  // Behind the menus the film plays instead, so there is nothing to simulate or draw.
+  if (!(mode === 'demo' && menuVideoPlaying)) {
+    if (!paused) {
+      if (mode === 'race') updateRace(dt, now / 1000);
+      else updateDemo(dt, now / 1000);
+    }
+    water.update(now / 1000);
+    render(now / 1000);
   }
-  water.update(now / 1000);
-  render(now / 1000);
   requestAnimationFrame(frame);
 }
-requestAnimationFrame(frame);
+
+if (CAPTURE) {
+  document.getElementById('ui')!.style.display = 'none';
+  menuVideo.style.display = 'none';
+  let clock = 0;
+  const advance = (dt: number, draw: boolean) => {
+    clock += dt;
+    updateRace(dt, clock);
+    if (!draw) return;
+    water.update(clock);
+    render(clock);
+  };
+  Object.assign(window, {
+    __capture: {
+      /**
+       * Set up a shot: a race on `trackId` seen from behind `racerId`, run
+       * forward (without drawing) until that kart reaches `waypoint`.
+       */
+      async shot(trackId: string, racerId: string, waypoint: number): Promise<void> {
+        await loadTrack(trackId);
+        startRace(racerId);
+        phase = 'racing';
+        const target = track.sampleAt(waypoint);
+        // Until it has left the grid and come round to within a few samples of the spot.
+        for (let n = 0; n < 6000 && (player.progress < 0 || track.ahead(player.index, target) > 3); n++) {
+          advance(1 / 30, false);
+        }
+        // Let the camera settle on the kart's height before the first frame.
+        for (let n = 0; n < 40; n++) render(clock);
+      },
+      /** Advance the race by `dt` seconds and draw it. */
+      frame(dt: number): void {
+        advance(dt, true);
+      },
+      /**
+       * A picture of the scenery alone: no karts, with the camera standing at
+       * `from` and looking at `to` (each x, height, z).
+       */
+      async view(trackId: string, from: [number, number, number], to: [number, number, number]): Promise<void> {
+        await loadTrack(trackId);
+        startRace(karts[0].id);
+        karts.forEach((kart, i) => {
+          kart.sprite.sprite.visible = false;
+          shadows[i].visible = false;
+        });
+        water.update(1);
+        camera.fov = CAM_FOV;
+        camera.updateProjectionMatrix();
+        camera.position.set(...from);
+        camera.lookAt(...to);
+        sky.follow(camera);
+        renderer.render(scene, camera);
+      },
+    },
+  });
+} else {
+  requestAnimationFrame(frame);
+}

@@ -43,6 +43,16 @@ body {
   display: block;
 }
 
+/* the film behind the menus, over the game and under the buttons */
+#menu-video {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+}
+
 #ui {
   position: fixed;
   inset: 0;
@@ -216,12 +226,32 @@ button:focus-visible {
 }
 
 /* ───────── character select ───────── */
+/* Laid out as a grid so the pieces can be rearranged on short screens. */
 #select {
+  display: grid;
+  grid-template-areas: 'title' 'racers' 'speed' 'go';
+  justify-items: center;
+  align-content: center;
+  gap: clamp(10px, 3vh, 30px);
+}
+#select .heading {
+  grid-area: title;
+}
+#select #racers {
+  grid-area: racers;
+}
+#select #speed {
+  grid-area: speed;
+}
+#select #go {
+  grid-area: go;
+}
+#tracks {
   gap: clamp(10px, 3vh, 30px);
 }
 /* The Go button always keeps its place in the layout, so nothing jumps when
-   it appears; it slides up and fades in when a racer is selected. */
-#select #go {
+   it appears; it slides up and fades in when something is selected. */
+.go-button {
   min-height: clamp(64px, 12vmin, 96px);
   font-size: clamp(30px, 6vmin, 50px);
   opacity: 0;
@@ -235,7 +265,7 @@ button:focus-visible {
     box-shadow 0.12s var(--ease-out),
     visibility 0s linear 160ms;
 }
-#select #go.show {
+.go-button.show {
   opacity: 1;
   transform: none;
   visibility: visible;
@@ -246,7 +276,7 @@ button:focus-visible {
     box-shadow 0.12s var(--ease-out),
     visibility 0s;
 }
-#select #go.show:active {
+.go-button.show:active {
   transform: translateY(5px) scale(0.98);
   transition-duration: 120ms;
 }
@@ -378,6 +408,72 @@ button:focus-visible {
 }
 .racer .racer-name {
   font-size: clamp(14px, 17cqw, 34px);
+  font-weight: 700;
+}
+
+/* ───────── track select ───────── */
+#track-list {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: clamp(14px, 4vmin, 40px);
+  max-width: 100%;
+}
+.track-card {
+  /* as big as two side by side will fit on a wide screen, or one above the other on an upright one */
+  width: clamp(190px, min(44vw, 64vmin), 540px);
+  padding: clamp(8px, 1.6vmin, 14px) clamp(8px, 1.6vmin, 14px) clamp(12px, 2.4vmin, 20px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(var(--cream), var(--cream-2));
+  border: 6px solid var(--ink);
+  border-radius: 34px;
+  box-shadow:
+    inset 0 -10px 0 #edc67e,
+    0 9px 0 rgba(40, 20, 5, 0.9);
+  animation: card-in 0.55s var(--pop) both;
+  transition: transform 0.15s var(--ease-out);
+}
+.track-card:nth-child(2) {
+  animation-delay: 0.08s;
+}
+.track-card:active {
+  transform: scale(0.95);
+}
+.track-card.selected {
+  transform: translateY(-8px) scale(1.05);
+  background: linear-gradient(#fffdf2, #ffe08a);
+  box-shadow:
+    inset 0 -10px 0 #f2b93b,
+    0 9px 0 rgba(40, 20, 5, 0.9),
+    0 0 0 7px #ffd21f,
+    0 0 34px 10px rgba(255, 210, 31, 0.75);
+  z-index: 1;
+}
+.track-card.dim {
+  opacity: 0.72;
+  transform: scale(0.95);
+}
+@media (hover: hover) {
+  .track-card:not(.selected):hover {
+    transform: translateY(-8px) rotate(-1deg);
+  }
+}
+/* a picture taken on the track */
+.track-card img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 8 / 5;
+  object-fit: cover;
+  background: var(--cream-2);
+  border: 4px solid var(--ink);
+  border-radius: 22px;
+}
+.track-card .track-name {
+  font-size: clamp(18px, 4.6vmin, 34px);
   font-weight: 700;
 }
 
@@ -766,16 +862,175 @@ button:focus-visible {
   }
 }
 
+/* ───────── phones held sideways: everything has to fit in very little height ───────── */
+@media (max-height: 520px) and (orientation: landscape) {
+  .screen {
+    padding: 10px 14px;
+    gap: 8px;
+  }
+  .heading {
+    font-size: clamp(24px, 8vh, 34px);
+    -webkit-text-stroke-width: 7px;
+  }
+  .heading.small {
+    font-size: clamp(22px, 7vh, 30px);
+    -webkit-text-stroke-width: 6px;
+  }
+  .btn-huge {
+    border-width: 5px;
+    border-radius: 26px;
+  }
+  .go-button {
+    min-height: clamp(46px, 14vh, 60px);
+    font-size: clamp(24px, 8vh, 34px);
+    padding: 0 40px 4px;
+  }
+
+  /* Character select: the speed buttons move up beside the heading, leaving
+     the height for the dinos and the Go button. */
+  #select {
+    grid-template-areas:
+      'title speed'
+      'racers racers'
+      'go go';
+    grid-template-columns: auto auto;
+    justify-content: center;
+    column-gap: 20px;
+    row-gap: 8px;
+    align-items: center;
+  }
+  /* The top row is as wide as the row of dinos: heading at its left end, speeds at its right. */
+  #select .heading {
+    justify-self: start;
+    padding-left: 6px;
+  }
+  #select #speed {
+    justify-self: end;
+  }
+  #racers {
+    gap: 8px;
+  }
+  .racer {
+    width: clamp(84px, 14.5vw, 150px);
+    padding: 4px 6px 8px;
+    border-width: 5px;
+    border-radius: 24px;
+    box-shadow:
+      inset 0 -7px 0 #edc67e,
+      0 6px 0 rgba(40, 20, 5, 0.9);
+  }
+  /* A slightly shorter picture frame, with the kart sitting right at the bottom of it. */
+  .racer .portrait {
+    aspect-ratio: 5 / 6;
+  }
+  .racer .portrait i {
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    height: 104%;
+  }
+  .racer.selected {
+    transform: translateY(-4px) scale(1.05);
+  }
+  .seg {
+    border-width: 4px;
+    border-radius: 18px;
+    box-shadow: 0 4px 0 rgba(40, 20, 5, 0.9);
+  }
+  .seg button {
+    min-width: 72px;
+    min-height: 44px;
+    font-size: 18px;
+  }
+  .seg button + button {
+    border-left-width: 4px;
+  }
+
+  /* Track select */
+  #track-list {
+    gap: 16px;
+  }
+  .track-card {
+    width: clamp(170px, min(36vw, 62vh), 300px);
+    padding: 6px 6px 8px;
+    gap: 2px;
+    border-width: 5px;
+    border-radius: 24px;
+    box-shadow:
+      inset 0 -7px 0 #edc67e,
+      0 6px 0 rgba(40, 20, 5, 0.9);
+  }
+  .track-card img {
+    border-width: 3px;
+    border-radius: 16px;
+  }
+  .track-card .track-name {
+    font-size: clamp(16px, 5.5vh, 24px);
+  }
+  .track-card.selected {
+    transform: translateY(-4px) scale(1.04);
+  }
+
+  /* Pop-up panels (pause, settings, finish) */
+  .overlay {
+    padding: 8px;
+  }
+  .panel {
+    gap: 8px;
+    padding: 10px 16px 16px;
+    border-width: 5px;
+    border-radius: 28px;
+    box-shadow:
+      inset 0 -8px 0 #edc67e,
+      0 8px 0 rgba(40, 20, 5, 0.85);
+  }
+  .menu {
+    gap: 8px 12px;
+  }
+  .menu .btn {
+    min-height: 48px;
+    font-size: 22px;
+    border-width: 4px;
+    border-radius: 20px;
+    box-shadow:
+      inset 0 -6px 0 var(--edge),
+      inset 0 4px 0 rgba(255, 255, 255, 0.4),
+      0 5px 0 rgba(40, 20, 5, 0.9);
+  }
+  #standings {
+    gap: 7px 12px;
+  }
+  .standing {
+    gap: 8px;
+    padding: 2px 12px 5px 8px;
+    font-size: 19px;
+    border-width: 3px;
+    border-radius: 16px;
+    box-shadow: inset 0 -4px 0 #eadcbc;
+  }
+  .standing .avatar {
+    width: 34px;
+    border-width: 2px;
+  }
+  .standing.me {
+    box-shadow:
+      inset 0 -4px 0 #f2b93b,
+      0 0 0 3px #ffd21f,
+      0 0 12px 3px rgba(255, 210, 31, 0.7);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .btn-huge,
   #fire.ready,
   .racer .portrait,
   .standing,
+  .track-card,
   #confetti i {
     animation: none;
   }
-  #select #go,
-  #select #go.show {
+  .go-button,
+  .go-button.show {
     transition: none;
   }
 }
