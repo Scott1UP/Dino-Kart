@@ -1,0 +1,141 @@
+{
+  "tap": {
+    "prompt": "A single soft, friendly UI button pop for a children's game. Short, round, wooden-toy quality. No music.",
+    "seconds": 0.5,
+    "pick": 1
+  },
+  "countdown": {
+    "prompt": "A single short arcade race countdown beep, mid pitch, clean and bright. One beep only.",
+    "seconds": 0.5,
+    "pick": 1
+  },
+  "go": {
+    "prompt": "A single bright, cheerful arcade race start signal: one long high beep with a happy sparkle. Children's kart racing game.",
+    "seconds": 1,
+    "pick": 3
+  },
+  "pickup": {
+    "prompt": "A magical sparkly item pickup in a children's kart racing game: an egg cracking open into a quick twinkling roulette of chimes.",
+    "seconds": 1.3,
+    "pick": 2
+  },
+  "gotItem": {
+    "prompt": "A short, cheerful two-note reward ding on a xylophone. Children's game. Bright and clean.",
+    "seconds": 0.7,
+    "pick": 2
+  },
+  "drop": {
+    "prompt": "A cartoon bone being dropped on a road: one short hollow wooden clatter with a comedic bounce.",
+    "seconds": 0.7,
+    "pick": 1
+  },
+  "boost": {
+    "prompt": "A cartoon speed boost for a go-kart: a quick rising whoosh with a playful rocket burst. Children's game, not harsh.",
+    "seconds": 1.6,
+    "pick": 1
+  },
+  "throwEgg": {
+    "prompt": "A cartoon throw: a quick springy whoosh as a big egg is launched forwards and rolls away. Children's game.",
+    "seconds": 1,
+    "pick": 1
+  },
+  "hit": {
+    "prompt": "A cartoon go-kart spin-out: a short comedic tyre skid with a wobbly boing. Funny, gentle, not scary. Children's game.",
+    "seconds": 1.3,
+    "pick": 1
+  },
+  "lap": {
+    "prompt": "A very short, bright three-note fanfare jingle for completing a lap in a children's kart racing game. Xylophone and bell.",
+    "seconds": 1.2,
+    "pick": 1
+  },
+  "finish": {
+    "prompt": "A cheerful victory fanfare for finishing a race in a children's kart racing game: bouncy brass and xylophone with a little cheer at the end.",
+    "seconds": 3.5,
+    "pick": 2
+  },
+  "engine": {
+    "prompt": "A small toy go-kart engine running at a steady speed: a soft, friendly, constant putt-putt motor hum. Even and continuous with no revving, no gear changes, no music.",
+    "seconds": 3,
+    "loop": true,
+    "pick": 2
+  },
+  "tar": {
+    "prompt": "A thick gloopy splat: a blob of sticky tar dropping onto a road. Short, wet, cartoonish. Children's game.",
+    "seconds": 0.8,
+    "pick": 1
+  },
+  "stuck": {
+    "prompt": "A cartoon go-kart driving into sticky goo: a short squelchy, slurpy slow-down sound with a comedic gloop. Children's game, not gross.",
+    "seconds": 1.2,
+    "pick": 1
+  },
+  "ptero": {
+    "prompt": "A friendly cartoon pterodactyl: one cheerful squawk followed by big leathery wing flaps swooping upward. Children's game, not scary.",
+    "seconds": 2,
+    "pick": 1
+  },
+  "splash": {
+    "prompt": "A big, happy cartoon splash: a go-kart landing in shallow water at the bottom of a waterfall. Bright, bubbly and fun, with a short spray of droplets after. Children's game.",
+    "seconds": 1.5,
+    "pick": 1
+  },
+  "surfaceRoad": {
+    "prompt": "Seamless loop: small rubber go-kart tyres rolling steadily over a dry dirt and fine gravel track. Soft, even, continuous crunchy rolling texture. No engine, no skids, no bumps, no music.",
+    "seconds": 4,
+    "loop": true,
+    "pick": 1
+  },
+  "surfaceWater": {
+    "prompt": "Seamless loop: a small go-kart driving steadily through shallow water. Continuous gentle sloshing, splashing and spray, bright and playful. No engine, no big splashes, no music.",
+    "seconds": 4,
+    "loop": true,
+    "pick": 1
+  },
+  "surfaceBridge": {
+    "prompt": "Seamless loop: small wheels rolling quickly across the planks of a wooden bridge. A steady, hollow, rhythmic wooden rumble and clatter. No engine, no creaking, no music.",
+    "seconds": 4,
+    "loop": true,
+    "pick": 1
+  },
+  "surfaceGrass": {
+    "prompt": "Seamless loop: a small go-kart driving through long grass and leafy plants. Continuous soft swishing and rustling. No engine, no music.",
+    "seconds": 4,
+    "loop": true,
+    "pick": 1
+  },
+  "surfaceSnow": {
+    "prompt": "Seamless loop: small go-kart tyres rolling steadily over firm packed snow. A soft, even, continuous squeaky crunch. No engine, no wind, no music.",
+    "seconds": 4,
+    "loop": true,
+    "pick": 1
+  },
+  "surfaceIce": {
+    "prompt": "Seamless loop: a small go-kart sliding steadily across smooth hard ice. A continuous light, hissing, glassy skidding glide with a faint high shimmer. No engine, no cracking, no music.",
+    "seconds": 4,
+    "loop": true,
+    "pick": 1
+  },
+  "surfaceLake": {
+    "prompt": "Seamless loop: wheels gliding over a frozen lake. A continuous soft, hollow, glassy scraping with deep muffled ice resonance underneath. No engine, no loud cracks, no music.",
+    "seconds": 4,
+    "loop": true,
+    "pick": 1
+  },
+  "surfacePowder": {
+    "prompt": "Seamless loop: a small go-kart ploughing slowly through deep soft powder snow. A continuous muffled whooshing and soft fluffy crumbling. No engine, no wind, no music.",
+    "seconds": 4,
+    "loop": true,
+    "pick": 1
+  },
+  "bump": {
+    "prompt": "A cartoon go-kart bumping into a lump of ice: one short, soft, rubbery bonk with a little icy clink. Gentle and funny, not a crash. Children's game.",
+    "seconds": 0.7,
+    "pick": 1
+  },
+  "land": {
+    "prompt": "A cartoon go-kart landing after a jump onto snow and ice: one soft, cushioned whump with a short icy slide and a sprinkle of snow. Gentle and satisfying, not a crash. Children's game.",
+    "seconds": 1.0,
+    "pick": 1
+  }
+}

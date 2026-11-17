@@ -1,0 +1,106 @@
+{
+  "tap": {
+    "take": 1,
+    "loop": false
+  },
+  "countdown": {
+    "take": 1,
+    "loop": false
+  },
+  "go": {
+    "take": 3,
+    "loop": false
+  },
+  "pickup": {
+    "take": 2,
+    "loop": false
+  },
+  "gotItem": {
+    "take": 2,
+    "loop": false
+  },
+  "drop": {
+    "take": 1,
+    "loop": false
+  },
+  "boost": {
+    "take": 1,
+    "loop": false
+  },
+  "throwEgg": {
+    "take": 1,
+    "loop": false
+  },
+  "hit": {
+    "take": 1,
+    "loop": false
+  },
+  "lap": {
+    "take": 1,
+    "loop": false
+  },
+  "finish": {
+    "take": 2,
+    "loop": false
+  },
+  "engine": {
+    "take": 2,
+    "loop": true
+  },
+  "tar": {
+    "take": 1,
+    "loop": false
+  },
+  "stuck": {
+    "take": 1,
+    "loop": false
+  },
+  "ptero": {
+    "take": 1,
+    "loop": false
+  },
+  "splash": {
+    "take": 1,
+    "loop": false
+  },
+  "surfaceRoad": {
+    "take": 1,
+    "loop": true
+  },
+  "surfaceWater": {
+    "take": 1,
+    "loop": true
+  },
+  "surfaceBridge": {
+    "take": 1,
+    "loop": true
+  },
+  "surfaceGrass": {
+    "take": 1,
+    "loop": true
+  },
+  "surfaceSnow": {
+    "take": 1,
+    "loop": true
+  },
+  "surfaceIce": {
+    "take": 1,
+    "loop": true
+  },
+  "surfaceLake": {
+    "take": 1,
+    "loop": true
+  },
+  "surfacePowder": {
+    "take": 1,
+    "loop": true
+  },
+  "bump": {
+    "take": 1,
+    "loop": false
+  },
+  "land": {
+    "take": 1,
+    "loop": false
+  }
+}

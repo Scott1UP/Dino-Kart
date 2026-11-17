@@ -1,0 +1,15 @@
+{
+  "theme": {
+    "file": "Kart_Parade_Title.mp3",
+    "loop": {
+      "start": 0.5,
+      "length": 43.6364
+    }
+  },
+  "dino-falls": {
+    "file": "Dino_Falls.mp3"
+  },
+  "glacier-glide": {
+    "file": "Glacier_Glide.mp3"
+  }
+}
