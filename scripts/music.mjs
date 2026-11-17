@@ -1,13 +1,13 @@
 // Publishes the game's music: "theme" for the menus, and one piece per track, named by the track's id.
 //
-//   npm run music                      publish every piece (generating any takes that are needed first)
-//   npm run music -- --retake theme    throw away the generated takes of one or more pieces and make fresh ones
+//   npm run music                      publish every piece (generating any that has not been made yet first)
+//   npm run music -- --retake theme    throw away the generated take of one or more pieces and make a fresh one
 //   npm run music -- --dry             just list what would be generated
 //
 // Pieces are listed in scripts/music.json. Each is either
 //   { "file": "Some_Tune.mp3" }                  a finished recording in art/music/, used as it is, or
-//   { "prompt": "...", "seconds": 60, "pick": 1 } generated with ElevenLabs Music: a few takes are written
-//                                                 to art/music/<id>-<n>.mp3 and `pick` chooses the one to use.
+//   { "prompt": "...", "seconds": 60, "pick": 1 } generated with ElevenLabs Music: one take is written
+//                                                 to art/music/<id>-1.mp3, and `pick` (always 1) names it.
 // The chosen recording of each piece is copied to public/audio/music/<id>.mp3 and listed in
 // manifest.json; the game plays what is in the manifest. art/music/ is local only.
 //
@@ -20,7 +20,8 @@ import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, unlinkS
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const TAKES = 3;
+// Music is expensive to generate, so each piece gets one take. Ask for another with --retake.
+const TAKES = 1;
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, '..');
@@ -103,10 +104,13 @@ let made = 0;
 for (const [id, piece] of Object.entries(pieces)) {
   if (piece.file) continue; // a supplied recording: nothing to generate
   const h = hash(piece);
+  const have = (n) => state[`${id}-${n}`] === h && existsSync(join(takesDir, `${id}-${n}.mp3`));
+  // The chosen take is there and up to date: the others are not needed.
+  if (!retake.includes(id) && have(piece.pick)) continue;
   for (let n = 1; n <= TAKES; n++) {
     const takeId = `${id}-${n}`;
     const file = join(takesDir, `${takeId}.mp3`);
-    if (!retake.includes(id) && state[takeId] === h && existsSync(file)) continue;
+    if (!retake.includes(id) && have(n)) continue;
     if (dry) {
       console.log(`would generate ${takeId} (${piece.seconds}s)`);
       continue;

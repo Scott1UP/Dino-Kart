@@ -4,7 +4,8 @@
  * Effects listed in public/audio/sfx/manifest.json (made by `npm run sfx`) are
  * played from their recordings. Anything not recorded falls back to a simple
  * sound synthesised with the Web Audio API, so the game is never silent. The
- * music is always synthesised.
+ * music is recorded too (public/audio/music/, made by `npm run music`), with a
+ * synthesised tune standing in for any track that has no recording.
  */
 
 import type { SurfaceLoopId } from './layouts';

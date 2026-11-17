@@ -295,18 +295,13 @@ button:focus-visible {
   transform: translateY(5px) scale(0.98);
   transition-duration: 120ms;
 }
-#racers {
-  display: flex;
-  gap: clamp(12px, 3vw, 34px);
-  justify-content: center;
-  align-items: stretch;
-  flex-wrap: wrap;
-  max-width: 100%;
-}
 /* six racers: three to a row on upright screens, all six in a row on wide ones */
 #racers {
   display: grid;
   grid-template-columns: repeat(3, auto);
+  gap: clamp(12px, 3vw, 34px);
+  justify-content: center;
+  max-width: 100%;
 }
 @media (min-aspect-ratio: 13/10) {
   #racers {
