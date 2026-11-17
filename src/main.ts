@@ -59,6 +59,17 @@ const CAM_LOOK_AHEAD = 30;
 const CAM_FOV = 58;
 /** The view widens by this many degrees during a speed boost. */
 const CAM_BOOST_FOV = 9;
+/**
+ * On an upright phone the view is so narrow that the kart would fill it, so the camera pulls
+ * back, climbs and widens its lens to show more of the road ahead. These are the amounts at
+ * the full effect, for a screen NARROW_FULL wide for its height or narrower; the effect eases
+ * in from nothing at NARROW_START (a little narrower than square).
+ */
+const NARROW_START = 0.9;
+const NARROW_FULL = 0.5;
+const NARROW_CAM_BACK = 20;
+const NARROW_CAM_HEIGHT = 12;
+const NARROW_CAM_FOV = 8;
 /** Behind the menus the camera sits further back and higher. */
 const DEMO_CAM_BACK = 62;
 const DEMO_CAM_HEIGHT = 30;
@@ -112,10 +123,13 @@ let speedClass = readSpeedClass();
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(CAM_FOV, 1, 1, 6000);
+/** How upright the screen is: 0 on wide screens, rising to 1 on an upright phone (see NARROW_START). */
+let narrow = 0;
 
 function resize(): void {
   const w = window.innerWidth;
   const h = window.innerHeight;
+  narrow = Math.min(1, Math.max(0, (NARROW_START - w / h) / (NARROW_START - NARROW_FULL)));
   const scale = retro ? RETRO_RES / Math.min(w, h) : Math.min(window.devicePixelRatio || 1, MAX_PIXEL_RATIO);
   renderer.setSize(Math.max(1, Math.round(w * scale)), Math.max(1, Math.round(h * scale)), false);
   camera.aspect = w / h;
@@ -447,6 +461,12 @@ ui.setTracks(
     void loadTrack(id).then(() => startRace(chosenRacer));
   },
 );
+// Back from the track select to choose a different dino.
+ui.on('tracks-back', () => {
+  sound.tap();
+  voice.stop();
+  ui.show('select');
+});
 ui.setSound(sound.enabled);
 ui.setMusic(sound.musicOn);
 ui.setRetro(retro);
@@ -480,11 +500,12 @@ ui.on('play', () => {
   ui.show('select');
 });
 ui.on('pause', pause);
-ui.on('resume', () => {
+function resume(): void {
   paused = false;
   sound.resume();
   ui.show('race');
-});
+}
+ui.on('resume', resume);
 ui.on('again', () => {
   voice.stop();
   startRace(player.id);
@@ -494,11 +515,6 @@ ui.on('change', () => {
   sound.resume();
   startDemo();
   ui.show('select');
-});
-ui.on('exit', () => {
-  sound.resume();
-  startDemo();
-  ui.show('title');
 });
 ui.on('sound', () => {
   sound.setEnabled(!sound.enabled);
@@ -520,15 +536,38 @@ ui.on('retro', () => {
 });
 // Settings open on top of the pause menu and go back to it. The game stays
 // paused, but sound is let through so the toggles can be heard.
+let inSettings = false;
 ui.on('settings', () => {
+  inSettings = true;
   sound.resume();
   sound.engine(0, 0);
   sound.surface(null, 0);
   ui.show('settings');
 });
-ui.on('settings-back', () => {
+function closeSettings(): void {
+  inSettings = false;
   sound.suspend();
   ui.show('pause');
+}
+ui.on('settings-back', closeSettings);
+// The list of controls also opens on top of the pause menu and goes back to it.
+let inControls = false;
+ui.on('controls', () => {
+  inControls = true;
+  ui.show('controls');
+});
+function closeControls(): void {
+  inControls = false;
+  ui.show('pause');
+}
+ui.on('controls-back', closeControls);
+// The Escape key pauses a race, and steps back out again: settings or controls to the pause menu, that to the race.
+window.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape' || e.repeat || mode !== 'race') return;
+  if (!paused) pause();
+  else if (inSettings) closeSettings();
+  else if (inControls) closeControls();
+  else resume();
 });
 // Pause automatically when the app goes to the background.
 document.addEventListener('visibilitychange', () => {
@@ -647,8 +686,8 @@ let camBase = 0;
 
 function render(time: number): void {
   const racing = mode === 'race';
-  const back = racing ? CAM_BACK : DEMO_CAM_BACK;
-  const height = racing ? CAM_HEIGHT : DEMO_CAM_HEIGHT;
+  const back = racing ? CAM_BACK + NARROW_CAM_BACK * narrow : DEMO_CAM_BACK;
+  const height = racing ? CAM_HEIGHT + NARROW_CAM_HEIGHT * narrow : DEMO_CAM_HEIGHT;
   const fx = Math.cos(player.heading);
   const fz = Math.sin(player.heading);
   // Follow the player's height with a little lag; snap if it is a long way off (a new race).
@@ -662,7 +701,10 @@ function render(time: number): void {
   sky.follow(camera);
 
   // Widen the view during a boost for a sense of speed.
-  const fov = CAM_FOV + (racing && (player.boost > 0 || player.fly > 0) ? CAM_BOOST_FOV : 0);
+  const fov =
+    CAM_FOV +
+    (racing ? NARROW_CAM_FOV * narrow : 0) +
+    (racing && (player.boost > 0 || player.fly > 0) ? CAM_BOOST_FOV : 0);
   if (Math.abs(camera.fov - fov) > 0.01) {
     camera.fov += (fov - camera.fov) * 0.12;
     camera.updateProjectionMatrix();
