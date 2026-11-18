@@ -8,6 +8,7 @@
 //   public/icon-maskable-512.png  the same, filling the whole square so Android can cut its own shape
 //   public/apple-touch-icon.png   home-screen icon for iPhones and iPads
 //   public/og.jpg                 the picture shown when a link to the game is shared
+//   android/app/src/main/res/mipmap-*/   launcher icons for the Android app
 //
 // The icon is Rex's profile picture on the game's sky blue. It is drawn from the full-size
 // drawing in art/raw/ when that is there, and from the packed one in public/sprites/ otherwise.
@@ -84,6 +85,31 @@ await write('icon-512.png', await icon(512, { corner: 0.22, face: 0.84 }));
 await write('icon-maskable-512.png', await icon(512, { face: 0.62 }));
 // iOS rounds the corners itself, and shows black wherever an icon is see-through.
 await write('apple-touch-icon.png', await icon(180, { face: 0.8 }));
+
+// The Android app's launcher icons, one set for each screen density. Newer Android draws the
+// "foreground" picture over a plain colour (res/values/ic_launcher_background.xml) and cuts its own
+// shape out of the middle, so the face sits well inside it. The other two are for older Android.
+const res = join(root, 'android/app/src/main/res');
+const densities = { mdpi: 1, hdpi: 1.5, xhdpi: 2, xxhdpi: 3, xxxhdpi: 4 };
+for (const [density, scale] of Object.entries(densities)) {
+  const size = 48 * scale;
+  const full = 108 * scale;
+  const inner = Math.round(full * 0.52);
+  const pad = Math.round((full - inner) / 2);
+  const files = {
+    'ic_launcher.png': await icon(size, { corner: 0.22, face: 0.84 }),
+    'ic_launcher_round.png': await icon(size, { corner: 0.5, face: 0.7 }),
+    'ic_launcher_foreground.png': await sharp(faceArt)
+      .resize(inner, inner, { fit: 'contain', background: CLEAR })
+      .extend({ top: pad, bottom: full - inner - pad, left: pad, right: full - inner - pad, background: CLEAR })
+      .png()
+      .toBuffer(),
+  };
+  for (const [name, data] of Object.entries(files)) {
+    await writeFile(join(res, `mipmap-${density}`, name), data);
+    console.log(`wrote android/app/src/main/res/mipmap-${density}/${name}`);
+  }
+}
 
 // The link preview: the logo over the Dino Falls cover. The cover is smaller than the picture,
 // so it is softened on purpose, like a background out of focus.
