@@ -646,7 +646,6 @@ function updateRace(dt: number, time: number): void {
   } else {
     goTimer = Math.max(0, goTimer - dt);
 
-    // After the finish the player's kart drives itself on a victory lap.
     // After the finish (and in capture mode) the player's kart drives itself.
     // During the race the player steers; in easy mode the kart follows the road when they let go.
     let steer = player.autoSteer(track);
