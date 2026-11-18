@@ -61,6 +61,16 @@ const PAD_BOOST_TIME = 1.1;
 /** How many centre-line samples ahead a computer driver aims. */
 const AI_LOOK_AHEAD = 10;
 
+/**
+ * Easy mode: with no steering from the player, the kart turns itself this
+ * eagerly to follow the road (a computer driver uses 2.5). It is lazy on
+ * purpose: it gets round every bend, but runs wide onto the grass on the
+ * tight ones, so steering yourself is still the faster way round. A kart that
+ * has left the road is brought back to at least EASY_MARGIN inside its edge.
+ */
+const EASY_STEER = 1.2;
+const EASY_MARGIN = 8;
+
 export class Kart {
   x = 0;
   z = 0;
@@ -364,6 +374,24 @@ export class Kart {
       lane = Math.abs(rock.lane - this.lane) > ROCK_AVOID ? this.lane : rock.lane + (rock.lane > 0 ? -1 : 1) * (ROCK_AVOID + 6);
     }
     return Math.max(-1, Math.min(1, this.aim(track, lane) * 2.5));
+  }
+
+  /**
+   * Steering that easy mode applies while the player isn't steering, -1..1.
+   * It follows the road in whatever lane the kart is already in, so it keeps
+   * the line the player last chose and does nothing clever: no racing line,
+   * and no moving over for rocks, tar or items. A kart that has run wide onto
+   * the grass or up against the fence is turned back the right way and
+   * brought in to the edge of the road.
+   */
+  easySteer(track: Track): number {
+    const i = this.lastIndex;
+    const h = track.headingAt(i);
+    // How far right of the centre line the kart is now.
+    const offset = (this.z - track.zs[i]) * Math.cos(h) - (this.x - track.xs[i]) * Math.sin(h);
+    const edge = track.roadHalf - EASY_MARGIN;
+    const lane = Math.max(-edge, Math.min(edge, offset));
+    return Math.max(-1, Math.min(1, this.aim(track, lane) * EASY_STEER));
   }
 }
 

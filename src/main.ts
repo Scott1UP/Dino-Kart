@@ -25,6 +25,8 @@ const RETRO_RES = 300;
 const RETRO_KEY = 'dino-kart-retro';
 /** Sharpest we render with the retro look off; more than this costs speed for little gain. */
 const MAX_PIXEL_RATIO = 2;
+/** Easy mode: the player's kart follows the road by itself whenever they aren't steering. */
+const EASY_KEY = 'dino-kart-easy';
 
 const RACER_IDS = ['rex', 'trike', 'stego', 'raptor', 'brachio', 'ptero'];
 /**
@@ -110,6 +112,15 @@ function readRetro(): boolean {
   }
 }
 let retro = readRetro();
+
+function readEasy(): boolean {
+  try {
+    return localStorage.getItem(EASY_KEY) === 'on';
+  } catch {
+    return false;
+  }
+}
+let easy = readEasy();
 
 function readSpeedClass(): number {
   try {
@@ -470,6 +481,7 @@ ui.on('tracks-back', () => {
 ui.setSound(sound.enabled);
 ui.setMusic(sound.musicOn);
 ui.setRetro(retro);
+ui.setEasy(easy);
 ui.setSpeedClass(speedClass);
 ui.onSpeedClass((cc) => {
   speedClass = cc;
@@ -533,6 +545,15 @@ ui.on('retro', () => {
   }
   ui.setRetro(retro);
   resize();
+});
+ui.on('easy', () => {
+  easy = !easy;
+  try {
+    localStorage.setItem(EASY_KEY, easy ? 'on' : 'off');
+  } catch {
+    // Storage unavailable (private window): the setting just won't be remembered.
+  }
+  ui.setEasy(easy);
 });
 // Settings open on top of the pause menu and go back to it. The game stays
 // paused, but sound is let through so the toggles can be heard.
@@ -627,7 +648,10 @@ function updateRace(dt: number, time: number): void {
 
     // After the finish the player's kart drives itself on a victory lap.
     // After the finish (and in capture mode) the player's kart drives itself.
-    player.step(track, phase === 'racing' && !CAPTURE ? input.steer : player.autoSteer(track), 1, dt);
+    // During the race the player steers; in easy mode the kart follows the road when they let go.
+    let steer = player.autoSteer(track);
+    if (phase === 'racing' && !CAPTURE) steer = input.steer || (easy ? player.easySteer(track) : 0);
+    player.step(track, steer, 1, dt);
     // Coming down from a jump: a splash into water, a thump onto anything else.
     if (player.landedOn === 'water') sound.splash();
     else if (player.landedOn) sound.land();
