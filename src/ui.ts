@@ -29,6 +29,7 @@ const fire = el<HTMLButtonElement>('fire');
 const fireIcon = el('fire-icon');
 const musicButton = el<HTMLButtonElement>('music');
 const retroButton = el<HTMLButtonElement>('retro');
+const easyButton = el<HTMLButtonElement>('easy');
 const speedButtons = [...el('speed').querySelectorAll<HTMLButtonElement>('button')];
 const placeTotal = el('place-total');
 const finishTitle = el('finish-title');
@@ -224,6 +225,14 @@ export const ui = {
     icon.textContent = '📺';
     retroButton.replaceChildren(icon, on ? ' Retro look on' : ' Retro look off');
     retroButton.setAttribute('aria-pressed', String(on));
+  },
+
+  setEasy(on: boolean): void {
+    const icon = document.createElement('span');
+    icon.className = 'emoji';
+    icon.textContent = '🐣';
+    easyButton.replaceChildren(icon, on ? ' Easy mode on' : ' Easy mode off');
+    easyButton.setAttribute('aria-pressed', String(on));
   },
 
   /** The big item button was pressed. Fires on touch-down so it feels instant. */
